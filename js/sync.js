@@ -35,23 +35,31 @@ async function syncData() {
     let syncedCount = 0;
     let errors = [];
 
+    console.log("[sync] API_BASE:", API_BASE);
+    console.log("[sync] userId:", userId);
+    console.log("[sync] settings:", settings);
+
     try {
         // 1. 同步情绪记录
         if (settings.share_mood) {
             const unsynced = await getAllUnsyncedMoods();
+            console.log("[sync] unsynced moods:", unsynced.length);
             for (const entry of unsynced) {
                 try {
-                    const resp = await fetch(`${API_BASE}/mood`, {
+                    const url = `${API_BASE}/mood`;
+                    const body = JSON.stringify({
+                        anonymous_id: userId,
+                        date: entry.date,
+                        time_period: entry.time_period,
+                        score: entry.score,
+                        emotion_tags: entry.emotion_tags || [],
+                        note: entry.note || ""
+                    });
+                    console.log("[sync] POST", url, body);
+                    const resp = await fetch(url, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            anonymous_id: userId,
-                            date: entry.date,
-                            time_period: entry.time_period,
-                            score: entry.score,
-                            emotion_tags: entry.emotion_tags || [],
-                            note: entry.note || ""
-                        })
+                        body: body
                     });
                     if (resp.ok) {
                         await markMoodSynced(entry.id);
@@ -61,7 +69,8 @@ async function syncData() {
                         errors.push(`情绪: ${err.detail || resp.status}`);
                     }
                 } catch (e) {
-                    errors.push(`情绪记录(${entry.date}): 网络错误`);
+                    console.error("[sync] mood error:", e);
+                    errors.push(`情绪记录(${entry.date}): ${e.message || "网络错误"}`);
                 }
             }
         }
@@ -69,6 +78,7 @@ async function syncData() {
         // 2. 同步症状记录
         if (settings.share_mood) {
             const unsyncedSymptoms = await getAllUnsyncedSymptoms();
+            console.log("[sync] unsynced symptoms:", unsyncedSymptoms.length);
             for (const entry of unsyncedSymptoms) {
                 try {
                     const resp = await fetch(`${API_BASE}/symptom`, {
@@ -89,7 +99,8 @@ async function syncData() {
                         errors.push(`症状: ${err.detail || resp.status}`);
                     }
                 } catch (e) {
-                    errors.push(`症状记录(${entry.date}): 网络错误`);
+                    console.error("[sync] symptom error:", e);
+                    errors.push(`症状记录(${entry.date}): ${e.message || "网络错误"}`);
                 }
             }
         }
@@ -97,6 +108,7 @@ async function syncData() {
         // 3. 同步日记
         if (settings.share_diary) {
             const unsyncedDiaries = await getAllUnsyncedDiaries();
+            console.log("[sync] unsynced diaries:", unsyncedDiaries.length);
             for (const entry of unsyncedDiaries) {
                 try {
                     const resp = await fetch(`${API_BASE}/diary`, {
@@ -118,7 +130,8 @@ async function syncData() {
                         errors.push(`日记: ${err.detail || resp.status}`);
                     }
                 } catch (e) {
-                    errors.push(`日记(${entry.date}): 网络错误`);
+                    console.error("[sync] diary error:", e);
+                    errors.push(`日记(${entry.date}): ${e.message || "网络错误"}`);
                 }
             }
         }
@@ -130,15 +143,15 @@ async function syncData() {
         } else if (errors.length === 0) {
             showToast("没有需要同步的新数据");
         } else {
-            showToast(`同步部分失败: ${errors[0]}`);
+            showToast(`同步失败: ${errors[0]}`);
         }
 
         if (errors.length > 0) {
             console.warn("同步错误:", errors);
         }
     } catch (err) {
-        console.error("同步失败:", err);
-        showToast("同步失败，请检查网络后重试");
+        console.error("同步异常:", err);
+        showToast(`同步异常: ${err.message || err}`);
     }
 }
 
