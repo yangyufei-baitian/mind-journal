@@ -1,19 +1,19 @@
 # 心灵日记 — 工作日志
 
-> 最后更新: 2026-07-23
+> 最后更新: 2026-07-23 17:40
 
 ---
 
 ## 总览
 
 ```
-Phase 1 [进行中] → Phase 2 [待开始] → Phase 3 [待开始] → Phase 4 [待开始] → Phase 5 [待开始]
- 部署上线             功能完善             软著申请             科研工具             论文产出
+Phase 1 [进行中 80%] → Phase 2 [待开始] → Phase 3 [待开始] → Phase 4 [待开始] → Phase 5 [待开始]
+ 部署上线                功能完善             软著申请             科研工具             论文产出
 ```
 
 ---
 
-## Phase 1 🚀 部署上线 (目标: 2周)
+## Phase 1 🚀 部署上线
 
 **目标**：后端部署到公网，不再依赖本地电脑。任何人随时随地可用。
 
@@ -21,25 +21,39 @@ Phase 1 [进行中] → Phase 2 [待开始] → Phase 3 [待开始] → Phase 4 
 
 | 日期 | 内容 | 状态 |
 |------|------|:--:|
-| 07-23 | 确定 Phase 1 任务清单 | ✅ |
+| 07-23 | 确定 Phase 1~5 任务清单 | ✅ |
 | 07-23 | 后端适配 PostgreSQL + 环境变量 (database.py/auth.py/main.py) | ✅ |
-| 07-23 | 前端 API_BASE 优先级系统 (localStorage > 注入 > 自动检测) | ✅ |
-| 07-23 | 创建 render.yaml (Render Blueprint) + vercel.json | ✅ |
-| 07-23 | 创建 DEPLOY.md 部署指南 + .gitignore | ✅ |
-| 07-23 | Git 初始化 + 首次提交 (28 files, 4695 lines) | ✅ |
-| | | |
+| 07-23 | 前端 API_BASE 优先级系统 (localStorage > window注入 > 自动检测) | ✅ |
+| 07-23 | 创建 render.yaml + vercel.json + DEPLOY.md + .gitignore | ✅ |
+| 07-23 | Git 初始化 + 首次提交 + 推送 GitHub (yangyufei-baitian/mind-journal) | ✅ |
+| 07-23 | Render: 后端部署成功 (mind-journal-api.onrender.com) — /health 返回 OK | ✅ |
+| 07-23 | Vercel: 前端部署成功 (mind-journal-livid.vercel.app) — 页面正常加载 | ✅ |
+| 07-23 | CORS 修复: CORS_ORIGINS 从 `*` 改为 `https://mind-journal-livid.vercel.app` | ✅ |
+| 07-23 | 账号注册测试通过 (手机→Vercel→Render 链路通) | ✅ |
+| 07-23 | 🔴 数据同步调试中 — 注册成功但同步报"网络错误"，已加 debug 日志等验证 | 🔴 |
 
-### 1.2 任务清单
+### 1.2 上线环境信息
 
-- [ ] 初始化 git 仓库
-- [ ] 后端适配 PostgreSQL（支持 DATABASE_URL 环境变量）
-- [ ] 后端安全加固（JWT_SECRET 环境变量、CORS 限制）
-- [ ] 前端 API_BASE 支持动态配置
-- [ ] 部署后端到 Render（免费层）
-- [ ] 部署前端到 Vercel（免费层）
-- [ ] 端到端测试：手机注册→记录→同步→换设备恢复
-- [ ] PWA 安装测试（添加到主屏幕）
-- [ ] 编写部署文档
+| 项目 | 地址 |
+|------|------|
+| 前端 (Vercel) | `https://mind-journal-livid.vercel.app/` |
+| 后端 (Render) | `https://mind-journal-api.onrender.com` |
+| API 文档 | `https://mind-journal-api.onrender.com/docs` |
+| GitHub | `https://github.com/yangyufei-baitian/mind-journal` |
+| 数据库 | Render PostgreSQL (自动注入 DATABASE_URL) |
+
+### 1.3 已知问题
+
+- **同步失败**：curl 直接调 API (`/api/mood`) 返回 200 正常，说明后端没问题。问题在前端 sync.js。已在最新 commit (180ef08) 中加入详细错误日志，下次打开页面点同步会显示具体错误信息。
+
+### 1.4 下次继续
+
+1. 手机打开 `https://mind-journal-livid.vercel.app/`
+2. 设置页确认"分享情绪记录"开关是开的
+3. 点"立即同步" → 把提示文字完整发来
+4. 根据错误日志定位根因并修复
+5. 修复后做端到端测试 (记录→同步→验证后端收到)
+6. PWA 安装测试（添加到主屏幕）
 
 ---
 
@@ -54,10 +68,9 @@ Phase 1 [进行中] → Phase 2 [待开始] → Phase 3 [待开始] → Phase 4 
 - [ ] 🔔 每日推送提醒（Notification API）
 - [ ] 😴 睡眠追踪（入睡/起床+时长）
 
-### 2.2 增强功能 (按优先级)
+### 2.2 增强功能
 
-- [ ] ✏️ 自定义症状（用户添加自己的症状）
-- [ ] 📊 数据可视化优化（移动端小屏适配）
+- [ ] ✏️ 自定义症状
 - [ ] 🌐 多设备 Profile 切换
 - [ ] 🎨 暗色模式
 - [ ] 🧪 基础测试覆盖
@@ -66,10 +79,10 @@ Phase 1 [进行中] → Phase 2 [待开始] → Phase 3 [待开始] → Phase 4 
 
 ## Phase 3 📜 软著申请 (目标: 1-3月)
 
-- [ ] 源代码整理（统一格式、去掉调试代码）
-- [ ] 软件说明书编写（功能描述+截图+架构图）
+- [ ] 源代码整理
+- [ ] 软件说明书编写
 - [ ] 中国版权保护中心提交申请
-- [ ] v1.0 正式版定版发布
+- [ ] v1.0 正式版定版
 
 ---
 
@@ -78,25 +91,23 @@ Phase 1 [进行中] → Phase 2 [待开始] → Phase 3 [待开始] → Phase 4 
 - [ ] 📊 研究员仪表盘 Web 页面
 - [ ] 📥 数据导出（CSV/SPSS + 数据字典）
 - [ ] 📖 算法白皮书（中英文）
-- [ ] 📝 IRB 材料模板（知情同意书+招募海报）
-- [ ] 🔒 安全加固（限流、日志审计）
+- [ ] 📝 IRB 材料模板
+- [ ] 🔒 安全加固
 - [ ] 👥 被试管理系统
 
 ---
 
 ## Phase 5 📝 论文与发布 (目标: 3-6月)
 
-- [ ] 算法验证论文（加权情绪算法的效度研究）
+- [ ] 算法验证论文
 - [ ] 系统设计论文（粒度化知情同意）
 - [ ] GitHub 开源 + Zenodo DOI
-- [ ] 推广与社区建设（可选）
 
 ---
 
-## 技术债务 (持续跟踪)
+## 技术债务
 
 - [ ] 生物学权重系数查阅文献验证
 - [ ] 症状权重咨询精神科临床意见
 - [ ] 单元测试覆盖
 - [ ] 多语言支持
-- [ ] HTTPS 部署（PWA Service Worker 需要）
