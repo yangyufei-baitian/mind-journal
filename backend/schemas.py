@@ -1,0 +1,127 @@
+"""
+Pydantic 模型 v0.2 — 新增症状、时段字段
+"""
+
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from datetime import datetime
+
+
+# ==================== 用户 ====================
+class UserCreate(BaseModel):
+    anonymous_id: str
+
+# v0.5: 账号系统
+class UserRegister(BaseModel):
+    username: str = Field(..., min_length=2, max_length=50)
+    password: str = Field(..., min_length=4, max_length=100)
+    anonymous_id: str  # 绑定已有本地数据
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class AuthResponse(BaseModel):
+    token: str
+    username: str
+    anonymous_id: str
+
+class UserResponse(BaseModel):
+    id: int
+    anonymous_id: str
+    created_at: datetime
+    class Config: from_attributes = True
+
+
+# ==================== 情绪记录 ====================
+class MoodRecordCreate(BaseModel):
+    anonymous_id: str
+    date: str
+    time_period: str = Field(..., description="时段: 0-6, 6-9, 9-12, 12-14, 14-18, 18-22, 22-24")
+    score: int = Field(..., ge=1, le=10)
+    emotion_tags: List[str] = Field(default=[])
+    note: str = Field(default="")
+
+class MoodRecordResponse(BaseModel):
+    id: int
+    user_id: int
+    date: str
+    time_period: str
+    score: int
+    emotion_tags: List[str]
+    note: str
+    uploaded_at: datetime
+    class Config: from_attributes = True
+
+
+# ==================== 症状条目 ====================
+class SymptomItem(BaseModel):
+    symptom_id: str
+    level: str               # mild / moderate / severe
+    frequency: Optional[str] = None  # 频率描述 (如 "每天3次")
+
+class SymptomRecordCreate(BaseModel):
+    anonymous_id: str
+    date: str
+    time_period: str
+    symptoms: List[SymptomItem] = Field(default=[])
+
+class SymptomRecordResponse(BaseModel):
+    id: int
+    user_id: int
+    date: str
+    time_period: str
+    symptoms: List[dict]
+    uploaded_at: datetime
+    class Config: from_attributes = True
+
+
+# ==================== 日记 ====================
+class DiaryRecordCreate(BaseModel):
+    anonymous_id: str
+    date: str
+    title: str = ""
+    content: str = ""
+    mood_at_time: int = Field(default=5, ge=1, le=10)
+
+class DiaryRecordResponse(BaseModel):
+    id: int
+    user_id: int
+    date: str
+    title: str
+    content: str
+    mood_at_time: int
+    uploaded_at: datetime
+    class Config: from_attributes = True
+
+
+# ==================== 知情同意 ====================
+class ConsentUpdate(BaseModel):
+    anonymous_id: str
+    share_mood: bool = False
+    share_diary: bool = False
+    status: str = Field(default="active")
+
+class ConsentResponse(BaseModel):
+    id: int
+    user_id: int
+    share_mood: bool
+    share_diary: bool
+    status: str
+    changed_at: Optional[datetime] = None
+    class Config: from_attributes = True
+
+
+# ==================== 研究员 ====================
+class ResearcherCreate(BaseModel):
+    username: str
+    password: str
+    institution: str = ""
+
+class ResearcherLogin(BaseModel):
+    username: str
+    password: str
+
+class MessageResponse(BaseModel):
+    message: str
+    detail: Optional[str] = None
