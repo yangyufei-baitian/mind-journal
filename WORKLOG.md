@@ -22,6 +22,11 @@ Phase 1 [进行中] → Phase 2 [待开始] → Phase 3 [待开始] → Phase 4 
 | 日期 | 内容 | 状态 |
 |------|------|:--:|
 | 07-23 | 确定 Phase 1 任务清单 | ✅ |
+| 07-23 | 后端适配 PostgreSQL + 环境变量 (database.py/auth.py/main.py) | ✅ |
+| 07-23 | 前端 API_BASE 优先级系统 (localStorage > 注入 > 自动检测) | ✅ |
+| 07-23 | 创建 render.yaml (Render Blueprint) + vercel.json | ✅ |
+| 07-23 | 创建 DEPLOY.md 部署指南 + .gitignore | ✅ |
+| 07-23 | Git 初始化 + 首次提交 (28 files, 4695 lines) | ✅ |
 | | | |
 
 ### 1.2 任务清单
