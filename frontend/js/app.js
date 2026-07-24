@@ -40,11 +40,15 @@ function switchPage(pageName) {
     document.querySelector(`.nav-btn[data-page="${pageName}"]`)?.classList.add("active");
     document.getElementById("page-title").textContent = pageTitles[pageName] || pageName;
 
-    if (pageName === "stats") { buildSingleSymptomSelector(); loadCharts(); }
-    else if (pageName === "music") { loadMusicList(); }
-    else if (pageName === "settings") { loadContactList(); loadConsentSettings(); }
-    else if (pageName === "record") { updateTodaySummary(); loadWeeklySummary(); }
-    else if (pageName === "diary") { loadDiaryList(); }
+    try {
+        if (pageName === "stats") { buildSingleSymptomSelector(); loadCharts(); }
+        else if (pageName === "music") { loadMusicList(); }
+        else if (pageName === "settings") { loadContactList(); loadConsentSettings(); }
+        else if (pageName === "record") { updateTodaySummary(); loadWeeklySummary(); }
+        else if (pageName === "diary") { loadDiaryList(); }
+    } catch (e) {
+        console.warn("switchPage init error:", pageName, e);
+    }
 }
 
 // ==================== 初始化 ====================
@@ -164,7 +168,8 @@ async function loadPeriodData(pid) {
     const emojis = ["","😢","😢","😞","😞","😐","😐","🙂","🙂","😄","😄"];
 
     // 情绪
-    const existingMood = await db.moodEntries.where("[date+time_period]").equals([today, pid]).first();
+    const allMoods = await db.moodEntries.toArray();
+    const existingMood = allMoods.find(e => e.date === today && e.time_period === pid);
     if (existingMood) {
         document.getElementById("mood-slider").value = existingMood.score;
         document.getElementById("mood-emoji").textContent = emojis[existingMood.score];
@@ -191,7 +196,8 @@ async function loadPeriodData(pid) {
         if (fi) fi.value = "";
     });
 
-    const existingSym = await db.symptomEntries.where("[date+time_period]").equals([today, pid]).first();
+    const allSyms = await db.symptomEntries.toArray();
+    const existingSym = allSyms.find(e => e.date === today && e.time_period === pid);
     if (existingSym?.symptoms) {
         existingSym.symptoms.forEach(s => {
             selectedSymptoms[s.symptom_id] = { level: s.level, frequency: s.frequency || "" };
