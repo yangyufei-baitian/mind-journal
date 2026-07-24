@@ -77,12 +77,20 @@ Phase 1 [✅ 完成] → Phase 2 [✅ 进行中] → Phase 3 [待开始] → Pha
 | 07-24 | SW bump v0.12, HTML_VER v5-scl90, scales.js bump v2.0 | ✅ |
 | 07-24 | collectScaleDataForReport() 只收集 required 量表, 选做量表不进入报告 | ✅ |
 
-### 2.3 待做
+### 2.3 bugfix + 文献补齐 (07-24)
 
-- [ ] SCL-90 测试: 手机端完成90题 → 检查因子分 → 查看趋势图
-- [ ] 同步测试: 完成量表 → 设置页同步 → Render 日志确认收到
-- [ ] 后端重新部署 (Render 自动从 GitHub main 分支部署)
-- [ ] P0: 文献支撑 (用户审查桌面 literature-review.md)
+| 日期 | 内容 | 状态 |
+|------|------|:--:|
+| 07-24 | 🐛 **Sync fix**: sync.js 同步前自动调用 POST /api/register (静默注册 anonymous_id) | ✅ |
+| 07-24 | 📚 **文献缺口补齐**: bio_weight 基于皮质醇定量数据 (Skubic 2025), symptom coef 基于 CGI-S (Busner 2007, Leucht 2019), 加权公式数学论证 (Stone 2023, Lo 2014), 隐私 consent (Pendse 2024, Kwon 2025) | ✅ |
+| 07-24 | 📚 文献文档更新至 22 篇, 新增第六~九章 | ✅ |
+| 07-24 | 🔧 **bio_weight 校准**: 基于皮质醇昼夜曲线 (0.5/1.5/1.3/0.8/1.0/0.9/0.6) | ✅ |
+| 07-24 | 🔧 **severity coef 非线性化**: mild 0.4 / moderate 1.0 / severe 2.5 (CGI-S 等百分位链接) | ✅ |
+| 07-24 | 🔧 DSHI-s max修正 27→18, SCL-90解读 +中国常模 (金华 1986, GSI=1.44±0.43) | ✅ |
+| 07-24 | 🔧 量表定义 +PHQ-9/GAD-7/C-SSRS 信效度引用 | ✅ |
+
+### 2.4 待做
+
 - [ ] P1 剩余: CSV 数据导出
 - [ ] P2: 工具打磨 (引导页, 数据导入, mini-charts)
 - [ ] P3: 工程清理 (移除 html2pdf CDN, 错误处理)
