@@ -1,13 +1,11 @@
 /* ============================================
-   sync.js v0.3-debug — 数据同步模块
+   sync.js v0.4 — 数据同步模块
    支持: 情绪(含时段) + 症状 + 日记同步
    API 地址优先级:
      1. localStorage "mj_api_base"
      2. window.MJ_API_BASE
      3. 自动检测
    ============================================ */
-window._SYNC_VER = "dbg-d1e50f8";
-setTimeout(() => { try { showToast&&showToast("sync: dbg-d1e50f8"); } catch(e) {} }, 3000);
 
 const API_BASE = (() => {
     const stored = localStorage.getItem("mj_api_base");
@@ -21,51 +19,20 @@ const API_BASE = (() => {
 })();
 
 async function syncData() {
-    // === Step 1: 读取设置 ===
-    let settings;
-    try {
-        showToast("S1: consentSettings...");
-        settings = await getConsentSettings();
-        showToast("S1 OK");
-    } catch(e) {
-        showToast("错误@consentSettings: " + (e.message || e));
-        console.error(e);
-        return;
-    }
+    const settings = await getConsentSettings();
 
     if (!settings.share_mood && !settings.share_diary) {
         showToast("请先在设置中开启数据共享");
         return;
     }
 
-    // === Step 2: 获取用户ID ===
-    let userId;
-    try {
-        showToast("S2: getUserId...");
-        userId = await getUserId();
-        showToast("S2 OK: " + userId.substring(0,8));
-    } catch(e) {
-        showToast("错误@getUserId: " + (e.message || e));
-        console.error(e);
-        return;
-    }
-
+    const userId = await getUserId();
     let syncedCount = 0;
     let errors = [];
 
-    // === Step 3: 同步情绪 ===
+    // 1. 同步情绪记录
     if (settings.share_mood) {
-        let unsynced;
-        try {
-            showToast("S3: getAllUnsyncedMoods...");
-            unsynced = await getAllUnsyncedMoods();
-            showToast("S3 OK: " + unsynced.length + "条");
-        } catch(e) {
-            showToast("错误@getAllUnsyncedMoods: " + (e.message || e));
-            console.error(e);
-            return;
-        }
-
+        const unsynced = await getAllUnsyncedMoods();
         for (const entry of unsynced) {
             try {
                 const resp = await fetch(`${API_BASE}/mood`, {
@@ -87,25 +54,15 @@ async function syncData() {
                     const err = await resp.json();
                     errors.push("情绪:" + (err.detail || resp.status));
                 }
-            } catch(e) {
-                errors.push("情绪POST: " + (e.message || "网络错误"));
+            } catch (e) {
+                errors.push("情绪POST:" + (e.message || "网络错误"));
             }
         }
     }
 
-    // === Step 4: 同步症状 ===
+    // 2. 同步症状记录
     if (settings.share_mood) {
-        let unsynced;
-        try {
-            showToast("S4: getAllUnsyncedSymptoms...");
-            unsynced = await getAllUnsyncedSymptoms();
-            showToast("S4 OK: " + unsynced.length + "条");
-        } catch(e) {
-            showToast("错误@getAllUnsyncedSymptoms: " + (e.message || e));
-            console.error(e);
-            return;
-        }
-
+        const unsynced = await getAllUnsyncedSymptoms();
         for (const entry of unsynced) {
             try {
                 const resp = await fetch(`${API_BASE}/symptom`, {
@@ -125,25 +82,15 @@ async function syncData() {
                     const err = await resp.json();
                     errors.push("症状:" + (err.detail || resp.status));
                 }
-            } catch(e) {
-                errors.push("症状POST: " + (e.message || "网络错误"));
+            } catch (e) {
+                errors.push("症状POST:" + (e.message || "网络错误"));
             }
         }
     }
 
-    // === Step 5: 同步日记 ===
+    // 3. 同步日记
     if (settings.share_diary) {
-        let unsynced;
-        try {
-            showToast("S5: getAllUnsyncedDiaries...");
-            unsynced = await getAllUnsyncedDiaries();
-            showToast("S5 OK: " + unsynced.length + "条");
-        } catch(e) {
-            showToast("错误@getAllUnsyncedDiaries: " + (e.message || e));
-            console.error(e);
-            return;
-        }
-
+        const unsynced = await getAllUnsyncedDiaries();
         for (const entry of unsynced) {
             try {
                 const resp = await fetch(`${API_BASE}/diary`, {
@@ -164,13 +111,13 @@ async function syncData() {
                     const err = await resp.json();
                     errors.push("日记:" + (err.detail || resp.status));
                 }
-            } catch(e) {
-                errors.push("日记POST: " + (e.message || "网络错误"));
+            } catch (e) {
+                errors.push("日记POST:" + (e.message || "网络错误"));
             }
         }
     }
 
-    // === 结果 ===
+    // 结果反馈
     if (syncedCount > 0) {
         showToast("已同步 " + syncedCount + " 条记录");
         updateSyncStatus(true);
