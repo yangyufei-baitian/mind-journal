@@ -44,7 +44,7 @@ function switchPage(pageName) {
         if (pageName === "stats") { buildSingleSymptomSelector(); loadCharts(); }
         else if (pageName === "music") { loadMusicList(); }
         else if (pageName === "settings") { loadContactList(); loadConsentSettings(); }
-        else if (pageName === "record") { updateTodaySummary(); loadWeeklySummary(); }
+        else if (pageName === "record") { updateTodaySummary(); loadWeeklySummary(); renderMedicationCheckins(); }
         else if (pageName === "diary") { loadDiaryList(); }
     } catch (e) {
         console.warn("switchPage init error:", pageName, e);
@@ -61,6 +61,15 @@ document.addEventListener("DOMContentLoaded", () => {
     try { buildSingleSymptomSelector(); } catch(e) { console.warn("single-symptom:", e); }
     try { buildAmbientSounds(); } catch(e) { console.warn("ambient:", e); }
     try { buildAccountUI(); } catch(e) { console.warn("account:", e); }
+    try { renderMedicationCheckins(); } catch(e) { console.warn("medication:", e); }
+
+    // 弹窗点击外部关闭
+    document.getElementById("med-manager-overlay")?.addEventListener("click", function(e) {
+        if (e.target === this) closeMedicationManager();
+    });
+    document.getElementById("med-detail-overlay")?.addEventListener("click", function(e) {
+        if (e.target === this) closeMedicationDetail();
+    });
 
     const slider = document.getElementById("mood-slider");
     if (slider) slider.addEventListener("input", () => {
