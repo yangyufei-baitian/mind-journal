@@ -97,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("add-music")?.addEventListener("click", addMusicTrack);
     document.getElementById("add-contact")?.addEventListener("click", addContact);
     document.getElementById("sync-now")?.addEventListener("click", syncData);
+    document.getElementById("export-report")?.addEventListener("click", showReportDialog);
     document.getElementById("export-data")?.addEventListener("click", exportDataHandler);
     document.getElementById("clear-data")?.addEventListener("click", clearDataHandler);
 

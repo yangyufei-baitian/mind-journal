@@ -743,3 +743,41 @@ body {
 .med-detail-desc { margin-top: 12px; }
 .med-detail-desc h4 { font-size: 0.9rem; margin: 0 0 6px 0; }
 .med-detail-desc p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+
+/* ==================== 报告导出弹窗 ==================== */
+
+.report-dialog-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2000;
+    background: rgba(0,0,0,0.5);
+    display: flex; justify-content: center; align-items: center;
+    animation: fadeIn 0.15s ease;
+}
+.report-dialog {
+    background: #fff; border-radius: 16px; padding: 24px;
+    width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+    animation: slideUp 0.2s ease;
+}
+.report-dialog-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+}
+.report-dialog-header h3 { margin: 0; font-size: 1.1rem; color: var(--text); }
+.report-dialog-close {
+    background: none; border: none; font-size: 1.3rem; cursor: pointer;
+    color: var(--text-muted); padding: 4px 8px; border-radius: 50%;
+}
+.report-dialog-close:hover { background: #f0f0f0; }
+
+.report-period-options { display: flex; gap: 10px; }
+.report-period-btn {
+    flex: 1; padding: 14px 8px; border: 2px solid #e0e0e0; border-radius: 12px;
+    background: #fff; cursor: pointer; text-align: center;
+    transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.report-period-btn:hover { border-color: var(--primary); background: #F1F8F1; }
+.report-period-btn.active { border-color: var(--primary); background: #E8F5E9; }
+.report-period-btn .period-num { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+.report-period-btn .period-unit { font-size: 0.75rem; color: var(--text-muted); }
+.report-period-btn .period-desc { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+.report-period-btn.active .period-num { color: var(--primary); }
+.report-period-btn.active .period-desc { color: var(--primary); }
