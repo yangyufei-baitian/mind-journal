@@ -60,11 +60,9 @@ async function saveMoodEntry(entry) {
     const date = entry.date || new Date().toISOString().split("T")[0];
     const timePeriod = entry.time_period;
 
-    // 检查同一日期+时段是否已有记录，有则更新
-    const existing = await db.moodEntries
-        .where("[date+time_period]")
-        .equals([date, timePeriod])
-        .first();
+    // 检查同一日期+时段是否已有记录，有则更新 (避免 compound index 查询)
+    const all = await db.moodEntries.toArray();
+    const existing = all.find(e => e.date === date && e.time_period === timePeriod);
 
     if (existing) {
         await db.moodEntries.update(existing.id, {
@@ -94,7 +92,8 @@ async function saveMoodEntry(entry) {
 
 async function getTodayMoods() {
     const today = new Date().toISOString().split("T")[0];
-    return await db.moodEntries.where("date").equals(today).toArray();
+    const all = await db.moodEntries.toArray();
+    return all.filter(e => e.date === today);
 }
 
 async function getMoodHistory(days = 30) {
@@ -102,10 +101,8 @@ async function getMoodHistory(days = 30) {
     since.setDate(since.getDate() - days);
     const sinceStr = since.toISOString().split("T")[0];
 
-    return await db.moodEntries
-        .where("date")
-        .between(sinceStr, "9999-12-31")
-        .sortBy("date");
+    const all = await db.moodEntries.toArray();
+    return all.filter(e => e.date >= sinceStr).sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /**
@@ -149,7 +146,9 @@ function calculateDailyWeightedMood(moodsByDate) {
 }
 
 async function getAllUnsyncedMoods() {
-    return await db.moodEntries.where("synced").equals(false).toArray();
+    // 用 filter 代替 where 查询，避免 IndexedDB index 查询异常
+    const all = await db.moodEntries.toArray();
+    return all.filter(e => !e.synced);
 }
 
 async function markMoodSynced(id) {
@@ -162,11 +161,9 @@ async function saveSymptomEntry(entry) {
     const date = entry.date || new Date().toISOString().split("T")[0];
     const timePeriod = entry.time_period;
 
-    // 检查同一日期+时段是否已有症状记录，有则更新
-    const existing = await db.symptomEntries
-        .where("[date+time_period]")
-        .equals([date, timePeriod])
-        .first();
+    // 检查同一日期+时段是否已有症状记录，有则更新 (避免 compound index 查询)
+    const all = await db.symptomEntries.toArray();
+    const existing = all.find(e => e.date === date && e.time_period === timePeriod);
 
     // 构建症状数据: [{symptom_id, level, frequency}]
     const symptomData = entry.symptoms || [];
@@ -191,7 +188,8 @@ async function saveSymptomEntry(entry) {
 
 async function getTodaySymptoms() {
     const today = new Date().toISOString().split("T")[0];
-    return await db.symptomEntries.where("date").equals(today).toArray();
+    const all = await db.symptomEntries.toArray();
+    return all.filter(e => e.date === today);
 }
 
 async function getSymptomHistory(days = 30) {
@@ -199,10 +197,8 @@ async function getSymptomHistory(days = 30) {
     since.setDate(since.getDate() - days);
     const sinceStr = since.toISOString().split("T")[0];
 
-    return await db.symptomEntries
-        .where("date")
-        .between(sinceStr, "9999-12-31")
-        .sortBy("date");
+    const all = await db.symptomEntries.toArray();
+    return all.filter(e => e.date >= sinceStr).sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /**
@@ -258,7 +254,8 @@ function calculateDailySymptomScore(symptomsByDate) {
 }
 
 async function getAllUnsyncedSymptoms() {
-    return await db.symptomEntries.where("synced").equals(false).toArray();
+    const all = await db.symptomEntries.toArray();
+    return all.filter(e => !e.synced);
 }
 
 async function markSymptomSynced(id) {
@@ -284,7 +281,8 @@ async function getDiaryList() {
 }
 
 async function getAllUnsyncedDiaries() {
-    return await db.diaryEntries.where("synced").equals(false).toArray();
+    const all = await db.diaryEntries.toArray();
+    return all.filter(e => !e.synced);
 }
 
 async function markDiarySynced(id) {
