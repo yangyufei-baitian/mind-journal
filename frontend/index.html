@@ -7,7 +7,7 @@
     <meta name="description" content="心灵日记 - 精神健康记录助手">
     <title>心灵日记</title>
     <link rel="stylesheet" href="css/style.css?v=11">
-    <script>window._HTML_VER = "v3-med02";</script>
+    <script>window._HTML_VER = "v4-scales";</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
@@ -104,6 +104,15 @@
 
     <!-- ==================== 2. 统计页 ==================== -->
     <main id="page-stats" class="page">
+
+        <!-- 临床量表 -->
+        <section class="card" id="scale-section">
+            <h2 class="card-title">📋 临床量表</h2>
+            <p class="card-desc">标准化自我评估工具，结果便于医生参考</p>
+            <div class="scale-cards-grid" id="scale-cards-container">
+                <!-- JS 动态渲染 -->
+            </div>
+        </section>
 
         <!-- 加权情绪趋势 -->
         <section class="card">
@@ -288,6 +297,7 @@
     <script src="js/db.js?v=11"></script>
     <script src="js/medication.js?v=11"></script>
     <script src="js/report.js?v=11"></script>
+    <script src="js/scales.js?v=1"></script>
     <script src="js/ambient-sounds.js?v=11"></script>
     <script src="js/charts.js?v=11"></script>
     <script src="js/music.js?v=11"></script>
