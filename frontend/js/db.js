@@ -54,6 +54,16 @@ async function getUserId() {
     return user.anonymous_id;
 }
 
+// 登录后同步服务器返回的 anonymous_id (用于跨设备/新会话)
+async function setUserId(anonymousId) {
+    const existing = await db.userInfo.get(1);
+    if (existing) {
+        await db.userInfo.update(1, { anonymous_id: anonymousId });
+    } else {
+        await db.userInfo.put({ id: 1, anonymous_id: anonymousId, created_at: new Date().toISOString() });
+    }
+}
+
 // ==================== 情绪记录 (v2: 多时段) ====================
 
 async function saveMoodEntry(entry) {
