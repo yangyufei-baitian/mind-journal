@@ -7,7 +7,7 @@
     <meta name="description" content="心灵日记 - 精神健康记录助手">
     <title>心灵日记</title>
     <link rel="stylesheet" href="css/style.css?v=11">
-    <script>window._HTML_VER = "v4-scales";</script>
+    <script>window._HTML_VER = "v5-scl90";</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
@@ -111,6 +111,21 @@
             <p class="card-desc">标准化自我评估工具，结果便于医生参考</p>
             <div class="scale-cards-grid" id="scale-cards-container">
                 <!-- JS 动态渲染 -->
+            </div>
+        </section>
+
+        <!-- 量表分数趋势 -->
+        <section class="card" id="scale-trend-section">
+            <h2 class="card-title">📈 量表分数趋势</h2>
+            <select id="scale-trend-select" onchange="renderScaleTrendChart()">
+                <option value="phq9">PHQ-9 抑郁症筛查</option>
+                <option value="gad7">GAD-7 焦虑症筛查</option>
+                <option value="cssrs">C-SSRS 自杀风险评估</option>
+                <option value="dshi">自伤行为筛查</option>
+                <option value="scl90">SCL-90 症状自评量表</option>
+            </select>
+            <div class="chart-container">
+                <canvas id="scale-trend-chart"></canvas>
             </div>
         </section>
 

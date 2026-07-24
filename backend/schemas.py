@@ -168,3 +168,25 @@ class MedicationLogResponse(BaseModel):
 class MessageResponse(BaseModel):
     message: str
     detail: Optional[str] = None
+
+
+# ==================== v0.7: 临床量表评估 ====================
+
+class ScaleAssessmentCreate(BaseModel):
+    anonymous_id: str
+    scale_type: str
+    date: str
+    answers: List[int] = Field(default=[])
+    total_score: int
+    severity_label: str = ""
+
+class ScaleAssessmentResponse(BaseModel):
+    id: int
+    user_id: int
+    date: str
+    scale_type: str
+    answers: List[int]
+    total_score: int
+    severity_label: str
+    uploaded_at: datetime
+    class Config: from_attributes = True

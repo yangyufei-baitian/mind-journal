@@ -6,13 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
-from models import User, MoodRecord, SymptomRecord, DiaryRecord, ConsentLog, UserMedication, MedicationLogRecord
+from models import User, MoodRecord, SymptomRecord, DiaryRecord, ConsentLog, UserMedication, MedicationLogRecord, ScaleAssessment
 from schemas import (
     MoodRecordCreate, MoodRecordResponse,
     SymptomRecordCreate, SymptomRecordResponse,
     DiaryRecordCreate, DiaryRecordResponse,
     MedicationConfigCreate, MedicationConfigResponse,
     MedicationLogCreate, MedicationLogResponse,
+    ScaleAssessmentCreate, ScaleAssessmentResponse,
     MessageResponse
 )
 
@@ -248,6 +249,53 @@ def get_medication_logs(
     return records
 
 
+# ==================== v0.7: 临床量表评估 ====================
+
+@router.post("/scale", response_model=MessageResponse)
+def upload_scale_assessment(data: ScaleAssessmentCreate, db: Session = Depends(get_db)):
+    """上传/更新量表评估（同一日期+量表类型会更新）"""
+    user = get_user_by_anonymous_id(db, data.anonymous_id)
+
+    existing = db.query(ScaleAssessment).filter(
+        ScaleAssessment.user_id == user.id,
+        ScaleAssessment.date == data.date,
+        ScaleAssessment.scale_type == data.scale_type
+    ).first()
+
+    if existing:
+        existing.answers = data.answers
+        existing.total_score = data.total_score
+        existing.severity_label = data.severity_label
+        db.commit()
+        return MessageResponse(message="评估已更新", detail=f"{data.scale_type} {data.date}")
+
+    record = ScaleAssessment(
+        user_id=user.id,
+        date=data.date,
+        scale_type=data.scale_type,
+        answers=data.answers,
+        total_score=data.total_score,
+        severity_label=data.severity_label
+    )
+    db.add(record)
+    db.commit()
+    return MessageResponse(message="评估已上传", detail=f"{data.scale_type} {data.date}")
+
+
+@router.get("/scale/{anonymous_id}", response_model=List[ScaleAssessmentResponse])
+def get_scale_assessments(
+    anonymous_id: str,
+    days: int = Query(default=90, ge=1, le=365),
+    db: Session = Depends(get_db)
+):
+    """获取用户量表评估历史"""
+    user = get_user_by_anonymous_id(db, anonymous_id)
+    records = db.query(ScaleAssessment).filter(
+        ScaleAssessment.user_id == user.id
+    ).order_by(ScaleAssessment.date.desc()).limit(days).all()
+    return records
+
+
 # ==================== 研究员数据查询 ====================
 
 @router.get("/research/moods", response_model=List[MoodRecordResponse])
@@ -325,7 +373,8 @@ def research_get_stats(db: Session = Depends(get_db)):
         "total_symptom_records": db.query(SymptomRecord).count(),
         "total_diary_records": db.query(DiaryRecord).count(),
         "total_medication_configs": db.query(UserMedication).count(),
-        "total_medication_logs": db.query(MedicationLogRecord).count()
+        "total_medication_logs": db.query(MedicationLogRecord).count(),
+        "total_scale_assessments": db.query(ScaleAssessment).count()
     }
 
 

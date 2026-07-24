@@ -24,6 +24,7 @@ class User(Base):
     consent_logs = relationship("ConsentLog", back_populates="user")
     medications = relationship("UserMedication", back_populates="user")
     medication_logs = relationship("MedicationLogRecord", back_populates="user")
+    scale_assessments = relationship("ScaleAssessment", back_populates="user")
 
 
 class MoodRecord(Base):
@@ -127,3 +128,21 @@ class MedicationLogRecord(Base):
     taken_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="medication_logs")
+
+
+# ==================== v0.7: 临床量表评估 ====================
+
+class ScaleAssessment(Base):
+    """心理量表评估记录"""
+    __tablename__ = "scale_assessments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    date = Column(String(10), nullable=False)            # "YYYY-MM-DD"
+    scale_type = Column(String(50), nullable=False)      # phq9/gad7/cssrs/dshi/scl90
+    answers = Column(JSON, default=[])                   # [0, 2, 1, 3, ...]
+    total_score = Column(Integer, nullable=False)
+    severity_label = Column(String(50), default="")
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="scale_assessments")

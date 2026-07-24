@@ -1,13 +1,13 @@
 # 心灵日记 — 工作日志
 
-> 最后更新: 2026-07-23 18:30
+> 最后更新: 2026-07-24 14:00
 
 ---
 
 ## 总览
 
 ```
-Phase 1 [✅ 完成] → Phase 2 [进行中] → Phase 3 [待开始] → Phase 4 [待开始] → Phase 5 [待开始]
+Phase 1 [✅ 完成] → Phase 2 [✅ 进行中] → Phase 3 [待开始] → Phase 4 [待开始] → Phase 5 [待开始]
  部署上线              功能完善             软著申请             科研工具             论文产出
 ```
 
@@ -45,56 +45,47 @@ Phase 1 [✅ 完成] → Phase 2 [进行中] → Phase 3 [待开始] → Phase 4
 | GitHub | `https://github.com/yangyufei-baitian/mind-journal` |
 | 数据库 | Render PostgreSQL (自动注入 DATABASE_URL) |
 
-### 1.3 本次修复的 Bug 汇总
-
-| Bug | 根因 | 修复 |
-|-----|------|------|
-| 同步报"网络错误" | Service Worker 缓存旧 JS 文件 | SW 版本号 + 静态资源 ?v= 参数 |
-| IDBKeyRange.bound 异常 | Dexie 索引查询在部分浏览器上不兼容 | 全部改用 toArray()+JS filter |
-| "用户未注册" | 新会话生成新 anonymous_id，与服务器不匹配 | 登录/注册后调用 setUserId() 同步 |
-
-### 1.2 上线环境信息
-
-| 项目 | 地址 |
-|------|------|
-| 前端 (Vercel) | `https://mind-journal-livid.vercel.app/` |
-| 后端 (Render) | `https://mind-journal-api.onrender.com` |
-| API 文档 | `https://mind-journal-api.onrender.com/docs` |
-| GitHub | `https://github.com/yangyufei-baitian/mind-journal` |
-| 数据库 | Render PostgreSQL (自动注入 DATABASE_URL) |
-
 ### 1.3 已知问题
 
 - **同步失败**：curl 直接调 API (`/api/mood`) 返回 200 正常，说明后端没问题。问题在前端 sync.js。已在最新 commit (180ef08) 中加入详细错误日志，下次打开页面点同步会显示具体错误信息。
 
-### 1.4 下次继续
-
-1. 手机打开 `https://mind-journal-livid.vercel.app/`
-2. 设置页确认"分享情绪记录"开关是开的
-3. 点"立即同步" → 把提示文字完整发来
-4. 根据错误日志定位根因并修复
-5. 修复后做端到端测试 (记录→同步→验证后端收到)
-6. PWA 安装测试（添加到主屏幕）
-
 ---
 
-## Phase 2 🔧 功能完善 (目标: 3-4周)
+## Phase 2 🔧 功能完善
 
-### 2.1 核心功能
+### 2.1 临床量表 v1.0 (07-23)
 
-- [ ] 🐛 修复已知 bug（导航切换等）
-- [ ] 💊 服药记录模块（药品名+剂量+时间）
-- [ ] 💊 药效对比图（服药 vs 情绪/症状趋势叠加）
-- [ ] 📋 医生报告 PDF 导出（含图表+症状摘要）
-- [ ] 🔔 每日推送提醒（Notification API）
-- [ ] 😴 睡眠追踪（入睡/起床+时长）
+| 日期 | 内容 | 状态 |
+|------|------|:--:|
+| 07-23 | PHQ-9 / GAD-7 / C-SSRS / DSHI-s 四个量表全部实现 | ✅ |
+| 07-23 | C-SSRS 分层评分 (tiered: 低/中/高/极高风险) | ✅ |
+| 07-23 | 危机干预自动触发 (C-SSRS≥2 → 热线弹窗, PHQ-9 Q9≥2 → C-SSRS引导) | ✅ |
+| 07-23 | 量表结果集成到 PDF 报告 (含严重度+基线比较+警告) | ✅ |
+| 07-23 | DB v4: +scaleEntries 表 (Dexie.js) | ✅ |
 
-### 2.2 增强功能
+### 2.2 临床量表增强 v2.0 (07-24)
 
-- [ ] ✏️ 自定义症状
-- [ ] 🌐 多设备 Profile 切换
-- [ ] 🎨 暗色模式
-- [ ] 🧪 基础测试覆盖
+| 日期 | 内容 | 状态 |
+|------|------|:--:|
+| 07-24 | **SCL-90** 症状自评量表 (90题标准中文版, 10因子维度, 分页显示每页10题) | ✅ |
+| 07-24 | SCL-90 因子评分: GSI/PST/PSDI + 10维度因子分表格 + 颜色标记 | ✅ |
+| 07-24 | **必做/选做分离**: 核心4量表 required:true (报告+警告), SCL-90 required:false (选做) | ✅ |
+| 07-24 | renderScaleCards 重构: 必做卡片组 + 分隔线 + "其他量表（选做）"区 | ✅ |
+| 07-24 | **量表云端同步**: saveScaleResult +synced字段, sync.js +scale sync section | ✅ |
+| 07-24 | 后端 +ScaleAssessment 表 +POST/GET /api/scale 端点 (upsert by user+date+type) | ✅ |
+| 07-24 | **量表分数趋势图**: stats页 +canvas折线图 +下拉选择器, SCL-90显示GSI, 数据点按严重度着色 | ✅ |
+| 07-24 | SW bump v0.12, HTML_VER v5-scl90, scales.js bump v2.0 | ✅ |
+| 07-24 | collectScaleDataForReport() 只收集 required 量表, 选做量表不进入报告 | ✅ |
+
+### 2.3 待做
+
+- [ ] SCL-90 测试: 手机端完成90题 → 检查因子分 → 查看趋势图
+- [ ] 同步测试: 完成量表 → 设置页同步 → Render 日志确认收到
+- [ ] 后端重新部署 (Render 自动从 GitHub main 分支部署)
+- [ ] P0: 文献支撑 (用户审查桌面 literature-review.md)
+- [ ] P1 剩余: CSV 数据导出
+- [ ] P2: 工具打磨 (引导页, 数据导入, mini-charts)
+- [ ] P3: 工程清理 (移除 html2pdf CDN, 错误处理)
 
 ---
 

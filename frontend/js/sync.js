@@ -178,6 +178,36 @@ async function syncData() {
         }
     }
 
+    // 6. 同步量表评估
+    if (settings.share_mood) {
+        const unsyncedScales = await getAllUnsyncedScales();
+        for (const entry of unsyncedScales) {
+            try {
+                const resp = await fetch(`${API_BASE}/scale`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        anonymous_id: userId,
+                        scale_type: entry.scale_type,
+                        date: entry.date,
+                        answers: entry.answers || [],
+                        total_score: entry.total_score,
+                        severity_label: entry.severity_label || ""
+                    })
+                });
+                if (resp.ok) {
+                    await markScaleSynced(entry.id);
+                    syncedCount++;
+                } else {
+                    const err = await resp.json();
+                    errors.push("量表:" + (err.detail || resp.status));
+                }
+            } catch (e) {
+                errors.push("量表POST:" + (e.message || "网络错误"));
+            }
+        }
+    }
+
     // 结果反馈
     if (syncedCount > 0) {
         showToast("已同步 " + syncedCount + " 条记录");
