@@ -108,7 +108,7 @@ async function generateReport(days) {
             }
         }
 
-        // 7. 打开新窗口 → 浏览器原生打印 → 另存为 PDF
+        // 7. 打开新窗口 (用更新后的 DOM — canvas 已变 img)
         const printWin = window.open("", "_blank", "width=800,height=600");
         if (!printWin) {
             showToast("弹窗被拦截，请允许本站弹窗后重试");
@@ -116,7 +116,11 @@ async function generateReport(days) {
             if (btn) { btn.disabled = false; btn.textContent = "📄 生成报告"; }
             return;
         }
-        printWin.document.write(reportHTML);
+        // 用更新后的 DOM (canvas已变img) 包成完整HTML文档
+        printWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>健康报告</title>'
+            + '</head><body style="display:flex;justify-content:center;background:#fff;">'
+            + container.innerHTML
+            + '</body></html>');
         printWin.document.close();
         printWin.focus();
 
