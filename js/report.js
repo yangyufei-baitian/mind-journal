@@ -101,13 +101,32 @@ async function generateReport(days) {
         const container = overlay.querySelector("#__report_container");
         container.innerHTML = reportHTML;
 
-        // 4. 渲染图表到 canvas (必须在可见 DOM 中)
+        // 4. 渲染图表到 canvas
         await renderReportCharts(container, data, days);
 
         // 5. 等待渲染完成
         await new Promise(r => setTimeout(r, 300));
 
-        // 6. 生成 PDF
+        // 6. 把 canvas 转成图片 (html2canvas 对 img 比 canvas 可靠得多)
+        const canvases = container.querySelectorAll("canvas");
+        for (const canvas of canvases) {
+            try {
+                const dataUrl = canvas.toDataURL("image/png");
+                const img = document.createElement("img");
+                img.src = dataUrl;
+                img.style.cssText = canvas.style.cssText || "max-width:100%;";
+                img.width = canvas.width;
+                img.height = canvas.height;
+                canvas.parentNode.replaceChild(img, canvas);
+            } catch (e) {
+                console.warn("Canvas to image failed:", e);
+            }
+        }
+
+        // 7. 等待图片渲染
+        await new Promise(r => setTimeout(r, 200));
+
+        // 8. 生成 PDF
         const opt = {
             margin: [8, 8, 8, 8],
             filename: `心灵日记_健康报告_${data.dateStart}_${data.dateEnd}.pdf`,
@@ -116,7 +135,8 @@ async function generateReport(days) {
                 scale: 2,
                 useCORS: true,
                 letterRendering: true,
-                logging: false
+                logging: false,
+                allowTaint: true
             },
             jsPDF: {
                 unit: "mm",
@@ -128,7 +148,7 @@ async function generateReport(days) {
 
         await html2pdf().set(opt).from(container).save();
 
-        // 7. 清理
+        // 9. 清理
         document.body.removeChild(overlay);
         showToast("报告已生成 ✅");
 
