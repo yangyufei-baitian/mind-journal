@@ -183,28 +183,16 @@ async function collectReportData(days) {
         });
     }
 
-    // --- 日记 ---
-    const allDiaries = await getDiaryList();
-    const diaries = allDiaries
-        .filter(d => d.date >= dateStart && d.date <= dateEnd)
-        .sort((a, b) => b.date.localeCompare(a.date));
-
     const userId = await getUserId();
 
     return {
         dateStart, dateEnd, days, userId, labels, dateList,
-        // 情绪
         moodScores, avgMood, maxMood, maxMoodDate, minMood, minMoodDate,
-        // 症状
         symScores, symRanking, topSymptomTrends,
-        // 服药
         medDetails,
-        // 日记
-        diaries,
         hasMood: moodVals.length > 0,
         hasSym: symRanking.length > 0,
-        hasMed: medDetails.length > 0,
-        hasDiary: diaries.length > 0
+        hasMed: medDetails.length > 0
     };
 }
 
@@ -268,11 +256,6 @@ function buildPrintHTML(data, days) {
   .med-card .med-stat .v { font-size:15px; font-weight:700; }
   .med-card .med-stat .l { font-size:9px; color:#636e72; }
   .med-pill-info { margin-top:6px; padding:6px 8px; border-radius:4px; font-size:10px; }
-
-  .diary-item { padding:6px 10px; margin:4px 0; border-left:3px solid #dfe6e9; background:#fafafa; border-radius:0 4px 4px 0; }
-  .diary-item .dd { font-size:9px; color:#b2bec3; }
-  .diary-item .dt { font-weight:600; font-size:11px; }
-  .diary-item .dc { font-size:10px; color:#636e72; }
 
   .r-footer { margin-top:16px; padding-top:8px; border-top:1px solid #e0e0e0; text-align:center; font-size:8px; color:#b2bec3; }
   .r-footer p { margin:1px 0; }
@@ -373,18 +356,6 @@ ${data.hasMood ? `
     <div class="stat-card"><div class="val">${data.moodScores.filter(s=>s!=null).length}/${data.days}</div><div class="lbl">记录天数</div></div>
   </div>
   <div class="chart-wrap"><canvas id="chart-mood"></canvas></div>
-</div>` : ""}
-
-<!-- ===== 4. 日记摘要 ===== -->
-${data.hasDiary ? `
-<div class="r-section">
-  <h2>📔 近期日记</h2>
-  ${data.diaries.slice(0, 5).map(d => `
-  <div class="diary-item">
-    <div class="dd">📅 ${d.date} · 心情 ${d.mood_at_time||"?"}/10</div>
-    <div class="dt">${escapeHtml(d.title||"无标题")}</div>
-    <div class="dc">${escapeHtml((d.content||"").substring(0,120))}${(d.content||"").length>120?"...":""}</div>
-  </div>`).join("")}
 </div>` : ""}
 
 <!-- ===== FOOTER ===== -->
