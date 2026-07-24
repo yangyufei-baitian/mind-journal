@@ -1,19 +1,19 @@
 # 心灵日记 — 工作日志
 
-> 最后更新: 2026-07-23 17:40
+> 最后更新: 2026-07-23 18:30
 
 ---
 
 ## 总览
 
 ```
-Phase 1 [进行中 80%] → Phase 2 [待开始] → Phase 3 [待开始] → Phase 4 [待开始] → Phase 5 [待开始]
- 部署上线                功能完善             软著申请             科研工具             论文产出
+Phase 1 [✅ 完成] → Phase 2 [进行中] → Phase 3 [待开始] → Phase 4 [待开始] → Phase 5 [待开始]
+ 部署上线              功能完善             软著申请             科研工具             论文产出
 ```
 
 ---
 
-## Phase 1 🚀 部署上线
+## Phase 1 🚀 部署上线 ✅ 完成
 
 **目标**：后端部署到公网，不再依赖本地电脑。任何人随时随地可用。
 
@@ -30,7 +30,28 @@ Phase 1 [进行中 80%] → Phase 2 [待开始] → Phase 3 [待开始] → Phas
 | 07-23 | Vercel: 前端部署成功 (mind-journal-livid.vercel.app) — 页面正常加载 | ✅ |
 | 07-23 | CORS 修复: CORS_ORIGINS 从 `*` 改为 `https://mind-journal-livid.vercel.app` | ✅ |
 | 07-23 | 账号注册测试通过 (手机→Vercel→Render 链路通) | ✅ |
-| 07-23 | 🔴 数据同步调试中 — 注册成功但同步报"网络错误"，已加 debug 日志等验证 | 🔴 |
+| 07-23 | 🐛 Debug 1: Service Worker 缓存旧 JS → SW v0.6 + 版本号参数 v=2~7 | ✅ |
+| 07-23 | 🐛 Debug 2: IndexedDB IDBKeyRange.bound 异常 → 全部改为 toArray()+filter | ✅ |
+| 07-23 | 🐛 Debug 3: 跨会话 anonymous_id 不匹配 → 登录后同步 setUserId() | ✅ |
+| 07-23 | ✅ 端到端同步成功: 手机记录情绪→登录→同步→后端确认收到 | ✅ |
+
+### 1.2 上线环境信息
+
+| 项目 | 地址 |
+|------|------|
+| 前端 (Vercel) | `https://mind-journal-livid.vercel.app/` |
+| 后端 (Render) | `https://mind-journal-api.onrender.com` |
+| API 文档 | `https://mind-journal-api.onrender.com/docs` |
+| GitHub | `https://github.com/yangyufei-baitian/mind-journal` |
+| 数据库 | Render PostgreSQL (自动注入 DATABASE_URL) |
+
+### 1.3 本次修复的 Bug 汇总
+
+| Bug | 根因 | 修复 |
+|-----|------|------|
+| 同步报"网络错误" | Service Worker 缓存旧 JS 文件 | SW 版本号 + 静态资源 ?v= 参数 |
+| IDBKeyRange.bound 异常 | Dexie 索引查询在部分浏览器上不兼容 | 全部改用 toArray()+JS filter |
+| "用户未注册" | 新会话生成新 anonymous_id，与服务器不匹配 | 登录/注册后调用 setUserId() 同步 |
 
 ### 1.2 上线环境信息
 
