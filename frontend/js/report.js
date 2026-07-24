@@ -84,77 +84,59 @@ async function generateReport(days) {
         // 2. 关闭弹窗
         closeReportDialog();
 
-        // 3. 构建报告 HTML + 显示为全屏预览 (必须在可见区域 html2canvas 才能捕获)
+        // 3. 构建报告，直接放 body (不要嵌套flex — html2canvas 算宽度会出问题)
         const reportHTML = buildReportHTML(data, days);
 
-        const overlay = document.createElement("div");
-        overlay.id = "__report_overlay";
-        overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:#fff;overflow-y:auto;";
-        overlay.innerHTML = `
-            <div style="background:#5B8C5A;color:#fff;text-align:center;padding:10px;font-size:14px;position:sticky;top:0;z-index:10;">
-                ⏳ 正在生成 PDF，请稍候...
-            </div>
-            <div style="display:flex;justify-content:center;"><div id="__report_container" style="width:750px;padding:8px;"></div></div>
-        `;
-        document.body.appendChild(overlay);
-
-        const container = overlay.querySelector("#__report_container");
+        const container = document.createElement("div");
+        container.id = "__report_container";
+        container.style.cssText = "position:absolute;top:0;left:0;width:750px;background:#fff;z-index:99999;";
         container.innerHTML = reportHTML;
+        document.body.appendChild(container);
 
         // 4. 渲染图表到 canvas
         await renderReportCharts(container, data, days);
 
         // 5. 等待渲染完成
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 400));
 
-        // 6. 把 canvas 转成图片 (html2canvas 对 img 比 canvas 可靠得多)
+        // 6. canvas → img (html2canvas 对 img 更可靠)
         const canvases = container.querySelectorAll("canvas");
         for (const canvas of canvases) {
             try {
                 const dataUrl = canvas.toDataURL("image/png");
                 const img = document.createElement("img");
                 img.src = dataUrl;
-                img.style.cssText = canvas.style.cssText || "max-width:100%;";
+                img.style.cssText = "display:block;max-width:100%;";
                 img.width = canvas.width;
                 img.height = canvas.height;
                 canvas.parentNode.replaceChild(img, canvas);
             } catch (e) {
-                console.warn("Canvas to image failed:", e);
+                console.warn("Canvas→img failed:", e);
             }
         }
 
-        // 7. 等待图片渲染
-        await new Promise(r => setTimeout(r, 200));
+        // 7. 等待图片加载
+        await new Promise(r => setTimeout(r, 300));
 
-        // 8. 生成 PDF
+        // 8. 生成 PDF — 直接用容器元素
         const opt = {
-            margin: [8, 8, 8, 8],
+            margin: [6, 6, 6, 6],
             filename: `心灵日记_健康报告_${data.dateStart}_${data.dateEnd}.pdf`,
             image: { type: "jpeg", quality: 0.95 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                letterRendering: true,
-                logging: false,
-                allowTaint: true
-            },
-            jsPDF: {
-                unit: "mm",
-                format: "a4",
-                orientation: "portrait"
-            },
+            html2canvas: { scale: 2, useCORS: true, logging: false, allowTaint: true },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
             pagebreak: { mode: ["css", "legacy"] }
         };
 
         await html2pdf().set(opt).from(container).save();
 
         // 9. 清理
-        document.body.removeChild(overlay);
+        document.body.removeChild(container);
         showToast("报告已生成 ✅");
 
     } catch (e) {
         console.error("Report generation failed:", e);
-        const temp = document.getElementById("__report_overlay");
+        const temp = document.getElementById("__report_container");
         if (temp) temp.remove();
         showToast("报告生成失败: " + (e.message || "未知错误"));
     } finally {
