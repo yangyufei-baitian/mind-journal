@@ -1,7 +1,7 @@
 /* ============================================
-   scales.js — 临床量表评估模块 v1.0
-   PHQ-9 (抑郁) | GAD-7 (焦虑) | C-SSRS (自杀) | DSHI-s (自伤)
-   所有量表基于已验证的中文版，引用文献见各量表注释
+   scales.js — 临床量表评估模块 v2.0
+   PHQ-9 | GAD-7 | C-SSRS | DSHI-s | SCL-90
+   2026-07-24: +SCL-90(90题/10因子), +选做/必做分离, +云端同步, +趋势图
    ============================================ */
 
 // ==================== 量表定义 ====================
@@ -15,6 +15,7 @@ const SCALES = {
     name: "PHQ-9 抑郁症筛查",
     icon: "🧠",
     shortName: "抑郁症筛查",
+    required: true,
     instruction: "在过去 <b>2 周</b> 中，您有多少时间受到以下问题困扰？",
     timeframe: "过去2周",
     questions: [
@@ -41,20 +42,18 @@ const SCALES = {
       { min: 15, max: 19, label: "中重度抑郁", color: "#C0392B", emoji: "🔴" },
       { min: 20, max: 27, label: "重度抑郁", color: "#8B0000", emoji: "🔴" }
     ],
-    // Q9 flag: 如果第9题 ≥ 2 分，标记自杀风险
     flagItems: [8],
     flagThreshold: 2,
     flagMessage: "⚠️ 第9题提示存在自杀意念，建议进一步用 C-SSRS 量表评估。"
   },
 
   // ---------- GAD-7 焦虑症筛查 ----------
-  // Spitzer RL, Kroenke K, Williams JBW (2006) Arch Intern Med
-  // 中文版信效度: 何筱衍等 (2010) 中国心理卫生杂志
   gad7: {
     id: "gad7",
     name: "GAD-7 焦虑症筛查",
     icon: "😰",
     shortName: "焦虑症筛查",
+    required: true,
     instruction: "在过去 <b>2 周</b> 中，您有多少时间受到以下问题困扰？",
     timeframe: "过去2周",
     questions: [
@@ -84,15 +83,13 @@ const SCALES = {
   },
 
   // ---------- C-SSRS 哥伦比亚自杀严重度评定量表 (筛查版) ----------
-  // Posner K, et al. (2011) Am J Psychiatry
-  // 中文版验证: Ji Y, et al. (2023) J Affect Disord
-  // Cronbach α = 0.884 (近一周), 0.842 (终生)
   cssrs: {
     id: "cssrs",
     name: "C-SSRS 自杀风险评估",
     icon: "🛡️",
     shortName: "自杀风险评估",
-    instruction: "以下问题关于<b>最近 1 个月</b>的情况。请如实回答，这些信息将帮助评估您的安全。",
+    required: true,
+    instruction: "以下问题关于<b>最近 1 个月</b>的情况。请如实回答。",
     timeframe: "最近1个月",
     questions: [
       "你是否希望自己死去，或者希望自己睡着后不再醒来？",
@@ -100,13 +97,12 @@ const SCALES = {
       "你是否想过自杀的方法（例如吃药、跳楼、上吊等）？",
       "你是否有过实施自杀的意图（不只是想想，而是认真考虑去做）？",
       "你是否已经为自杀做过任何准备（写遗书、准备药物、选择地点等）？",
-      "自上次评估以来，你是否实施过任何自杀行为（包括实施后被中断或中止的）？"
+      "自上次评估以来，你是否实施过任何自杀行为？"
     ],
     options: [
       { value: 0, label: "否" },
       { value: 1, label: "是" }
     ],
-    // C-SSRS 不使用总分，使用规则判定
     severity: [
       { min: 0, max: 0, label: "低风险", color: "#27ae60", emoji: "🟢" },
       { min: 1, max: 1, label: "中风险：存在自杀意念", color: "#F4A261", emoji: "🟡" },
@@ -116,24 +112,22 @@ const SCALES = {
     flagItems: [],
     flagThreshold: 0,
     flagMessage: "",
-    // 特殊评分逻辑：不是加总分，而是判定最高风险等级
     scoringLogic: "tiered",
     tiers: [
-      { maxQ: 2, anyYes: false, level: 0 },              // 全部否 → 低风险
-      { maxQ: 2, anyYes: true, level: 1 },               // Q1-Q2 有肯定 → 中风险
-      { maxQ: 5, anyYes: true, level: 2 },               // Q3-Q5 有肯定 → 高风险
-      { maxQ: 6, q6Yes: true, level: 3 }                 // Q6 肯定 → 极高风险
+      { maxQ: 2, anyYes: false, level: 0 },
+      { maxQ: 2, anyYes: true, level: 1 },
+      { maxQ: 5, anyYes: true, level: 2 },
+      { maxQ: 6, q6Yes: true, level: 3 }
     ]
   },
 
   // ---------- DSHI-s 自伤行为筛查 ----------
-  // 基于 Gratz KL (2001) DSHI 原版，简化至 9 类核心自伤行为
-  // 短版参考: DSHI-s (2023) 巴西验证版 15 题 α=0.95
   dshi: {
     id: "dshi",
     name: "自伤行为筛查",
     icon: "💔",
     shortName: "自伤行为筛查",
+    required: true,
     instruction: "以下列出了人们可能对自己做的一些行为。<b>在您的整个生命中</b>，您是否有意（而非意外）做过以下任何行为？",
     timeframe: "终生",
     questions: [
@@ -156,17 +150,157 @@ const SCALES = {
       { min: 0, max: 0, label: "无自伤行为", color: "#27ae60", emoji: "🟢" },
       { min: 1, max: 3, label: "轻度：1-3种方式", color: "#F4A261", emoji: "🟡" },
       { min: 4, max: 8, label: "中度：4-8种方式", color: "#E76F6F", emoji: "🟠" },
-      { min: 9, max: 27, label: "重度：≥9种方式或≥2种方式多次", color: "#C0392B", emoji: "🔴" }
+      { min: 9, max: 27, label: "重度：≥9种方式", color: "#C0392B", emoji: "🔴" }
     ],
     flagItems: [],
     flagThreshold: 0,
     flagMessage: ""
+  },
+
+  // ---------- SCL-90 症状自评量表 (选做) ----------
+  // Derogatis LR (1977) SCL-90-R. 中文版: 王征宇 (1984) 上海精神医学
+  // 90题, 10因子, 5级评分 (1-5)
+  scl90: {
+    id: "scl90",
+    name: "SCL-90 症状自评量表",
+    icon: "📋",
+    shortName: "症状自评量表",
+    required: false,
+    instruction: "以下列出了人们可能会有的问题。请仔细阅读每一条，根据<b>最近1周</b>的实际情况选择最合适的答案。",
+    timeframe: "最近1周",
+    // 90 questions, 0-indexed. Factor mapping below.
+    questions: [
+      "头痛",
+      "神经过敏，心中不踏实",
+      "头脑中有不必要的想法或字句盘旋",
+      "头昏或昏倒",
+      "对异性的兴趣减退",
+      "对旁人责备求全",
+      "感到别人能控制你的思想",
+      "责怪别人制造麻烦",
+      "忘性大",
+      "担心自己的衣饰整齐及仪态的端正",
+      "容易烦恼和激动",
+      "胸痛",
+      "害怕空旷的场所或街道",
+      "感到自己的精力下降，活动减慢",
+      "想结束自己的生命",
+      "听到旁人听不到的声音",
+      "发抖",
+      "感到大多数人都不可信任",
+      "胃口不好",
+      "容易哭泣",
+      "同异性相处时感到害羞不自在",
+      "感到受骗，中了圈套或有人想抓住你",
+      "无缘无故地突然感到害怕",
+      "自己不能控制地大发脾气",
+      "怕单独出门",
+      "经常责怪自己",
+      "腰痛",
+      "感到难以完成任务",
+      "感到孤独",
+      "感到苦闷",
+      "过分担忧",
+      "对事物不感兴趣",
+      "感到害怕",
+      "你的感情容易受到伤害",
+      "旁人能知道你的私下想法",
+      "感到别人不理解你、不同情你",
+      "感到人们对你不友好，不喜欢你",
+      "做事必须做得很慢以保证做得正确",
+      "心跳得很厉害",
+      "恶心或胃部不舒服",
+      "感到比不上他人",
+      "肌肉酸痛",
+      "感到有人在监视你、谈论你",
+      "入睡困难",
+      "做事必须反复检查",
+      "难以做出决定",
+      "怕乘电车、公共汽车、地铁或火车",
+      "呼吸有困难",
+      "一阵阵发冷或发热",
+      "因为感到害怕而避开某些东西、场合或活动",
+      "脑子变空了",
+      "身体发麻或刺痛",
+      "喉咙有梗塞感",
+      "感到前途没有希望",
+      "不能集中注意力",
+      "感到身体的某部分软弱无力",
+      "感到紧张或容易紧张",
+      "感到手或脚发重",
+      "想到死亡的事",
+      "吃得太多",
+      "当别人看着你或谈论你时感到不自在",
+      "有一些不属于你自己的想法",
+      "有想打人或伤害他人的冲动",
+      "醒得太早",
+      "必须反复洗手、点数目或触摸某些东西",
+      "睡得不稳不深",
+      "有想摔坏或破坏东西的冲动",
+      "有一些别人没有的想法或念头",
+      "感到对别人神经过敏",
+      "在商店或电影院等人多的地方感到不自在",
+      "感到任何事情都很困难",
+      "一阵阵恐惧或惊恐",
+      "感到在公共场合吃东西很不舒服",
+      "经常与人争论",
+      "单独一人时神经很紧张",
+      "别人对你的成绩没有作出恰当的评价",
+      "即使和别人在一起也感到孤单",
+      "感到坐立不安、心神不定",
+      "感到自己没有什么价值",
+      "感到熟悉的东西变成陌生或不像是真的",
+      "大叫或摔东西",
+      "害怕会在公共场合昏倒",
+      "感到别人想占你的便宜",
+      "为一些有关\"性\"的想法而很苦恼",
+      "你认为应该因为自己的过错而受到惩罚",
+      "感到要赶快把事情做完",
+      "感到自己的身体有严重问题",
+      "从未感到和其他人很亲近",
+      "感到自己有罪",
+      "感到自己的脑子有毛病"
+    ],
+    options: [
+      { value: 1, label: "从无" },
+      { value: 2, label: "轻度" },
+      { value: 3, label: "中度" },
+      { value: 4, label: "偏重" },
+      { value: 5, label: "严重" }
+    ],
+    // 10 factor dimensions (0-indexed question indices)
+    dimensions: [
+      { name: "躯体化",      items: [0,3,11,26,39,41,47,48,51,52,55,57] },
+      { name: "强迫症状",    items: [2,8,9,27,37,44,45,50,54,64] },
+      { name: "人际关系敏感", items: [5,20,33,35,36,40,60,68,72] },
+      { name: "抑郁",        items: [4,13,14,19,21,25,28,29,30,31,53,70,78] },
+      { name: "焦虑",        items: [1,16,22,32,38,56,71,77,79,85] },
+      { name: "敌对",        items: [10,23,62,66,73,80] },
+      { name: "恐怖",        items: [12,24,46,49,69,74,81] },
+      { name: "偏执",        items: [7,17,42,67,75,82] },
+      { name: "精神病性",    items: [6,15,34,61,76,83,84,86,87,89] },
+      { name: "其他",        items: [18,43,58,59,63,65,88] }
+    ],
+    severity: [
+      { min: 0, max: 1.49, label: "正常", color: "#27ae60", emoji: "🟢" },
+      { min: 1.5, max: 1.99, label: "轻度异常", color: "#F4A261", emoji: "🟡" },
+      { min: 2.0, max: 2.49, label: "中度异常", color: "#E76F6F", emoji: "🟠" },
+      { min: 2.5, max: 2.99, label: "偏重异常", color: "#C0392B", emoji: "🔴" },
+      { min: 3.0, max: 5.0, label: "严重异常", color: "#8B0000", emoji: "🔴" }
+    ],
+    flagItems: [],
+    flagThreshold: 0,
+    flagMessage: "",
+    scoringLogic: "scl90",
+    // 每题分数范围 1-5, 总分范围 90-450
+    // 严重度基于 GSI (总均分 = total/90)
+    maxTotal: 450,
+    minTotal: 90
   }
 };
 
 // ==================== 数据库操作 ====================
 
-// 保存量表结果
 async function saveScaleResult(scaleType, score, answers, severityLabel) {
   const date = new Date().toISOString().split("T")[0];
   const existing = await db.scaleEntries
@@ -176,9 +310,10 @@ async function saveScaleResult(scaleType, score, answers, severityLabel) {
   const record = {
     scale_type: scaleType,
     date: date,
-    answers: answers,        // 每题的分数或选项值
+    answers: answers,
     total_score: score,
     severity_label: severityLabel,
+    synced: false,
     created_at: new Date().toISOString()
   };
 
@@ -189,16 +324,20 @@ async function saveScaleResult(scaleType, score, answers, severityLabel) {
   return await db.scaleEntries.add(record);
 }
 
-// 获取某量表的所有历史结果
-async function getScaleHistory(scaleType, limit = 10) {
-  return await db.scaleEntries
+async function getScaleHistory(scaleType, limitDays = 90) {
+  const since = new Date();
+  since.setDate(since.getDate() - limitDays);
+  const sinceStr = since.toISOString().split("T")[0];
+
+  const all = await db.scaleEntries
     .where("scale_type")
     .equals(scaleType)
     .reverse()
     .sortBy("date");
+
+  return all.filter(e => e.date >= sinceStr);
 }
 
-// 获取某量表最近一次结果
 async function getLatestScaleResult(scaleType) {
   const all = await db.scaleEntries
     .where("scale_type")
@@ -208,35 +347,84 @@ async function getLatestScaleResult(scaleType) {
   return all[0] || null;
 }
 
+// ==================== 同步辅助函数 ====================
+
+async function getAllUnsyncedScales() {
+  const all = await db.scaleEntries.toArray();
+  return all.filter(e => !e.synced);
+}
+
+async function markScaleSynced(id) {
+  return await db.scaleEntries.update(id, { synced: true });
+}
+
+// ==================== SCL-90 因子评分 ====================
+
+function getSCL90Factors(answers) {
+  const scl90 = SCALES.scl90;
+  if (!scl90) return null;
+
+  const total = answers.reduce((s, a) => s + a, 0);
+  const gsi = Math.round((total / 90) * 100) / 100;        // Global Severity Index
+  const pst = answers.filter(a => a >= 3).length;           // Positive Symptom Total
+  const psdi = pst > 0 ? Math.round((total / pst) * 100) / 100 : 0; // Positive Symptom Distress Index
+
+  const factors = scl90.dimensions.map(dim => {
+    const scores = dim.items.map(i => answers[i]).filter(a => a > 0);
+    const sum = scores.reduce((s, a) => s + a, 0);
+    const avg = dim.items.length > 0 ? Math.round((sum / dim.items.length) * 100) / 100 : 0;
+    const positiveCount = scores.filter(a => a >= 3).length;
+    return {
+      name: dim.name,
+      itemCount: dim.items.length,
+      avg: avg,
+      sum: sum,
+      positiveCount: positiveCount
+    };
+  });
+
+  return { total, gsi, pst, psdi, factors };
+}
+
 // ==================== 评分逻辑 ====================
 
 function getSeverity(scaleId, score, answers) {
   const scale = SCALES[scaleId];
   if (!scale) return null;
 
-  // 特殊评分：C-SSRS
+  // C-SSRS tiered
   if (scale.scoringLogic === "tiered") {
     const q6Yes = answers[5] > 0;
     const q3to5Yes = answers.slice(2, 5).some(a => a > 0);
     const q1to2Yes = answers.slice(0, 2).some(a => a > 0);
-
-    if (q6Yes) return scale.severity[3];   // 极高风险
-    if (q3to5Yes) return scale.severity[2]; // 高风险
-    if (q1to2Yes) return scale.severity[1]; // 中风险
-    return scale.severity[0];               // 低风险
+    if (q6Yes) return scale.severity[3];
+    if (q3to5Yes) return scale.severity[2];
+    if (q1to2Yes) return scale.severity[1];
+    return scale.severity[0];
   }
 
-  // 标准评分
+  // SCL-90: severity based on GSI (total/90)
+  if (scale.scoringLogic === "scl90") {
+    const gsi = score / 90; // score = total score
+    for (const s of scale.severity) {
+      if (gsi >= s.min && gsi <= s.max) return s;
+    }
+    return scale.severity[scale.severity.length - 1];
+  }
+
+  // Standard sum-based
   for (const s of scale.severity) {
     if (score >= s.min && score <= s.max) return s;
   }
   return scale.severity[scale.severity.length - 1];
 }
 
-// 检查 flag（如 PHQ-9 Q9）
 function checkFlags(scaleId, answers) {
   const scale = SCALES[scaleId];
   if (!scale || !scale.flagItems || scale.flagItems.length === 0) return null;
+
+  // 选做量表不触发 flag 警告
+  if (scale.required === false) return null;
 
   for (const idx of scale.flagItems) {
     if (answers[idx] >= scale.flagThreshold) {
@@ -248,23 +436,26 @@ function checkFlags(scaleId, answers) {
 
 // ==================== 量表 UI 渲染 ====================
 
-// 当前正在填写的量表状态
 let currentScaleId = null;
 let currentScaleAnswers = [];
-let currentScaleStep = 0; // 0=介绍页, 1=问题页, 2=结果页
+let currentScaleStep = 0;
+let scl90Page = 0;           // SCL-90 翻页
+const SCL90_PAGE_SIZE = 10;  // 每页10题
 
-// 打开量表评估弹窗
 async function openScaleAssessment(scaleId) {
   const scale = SCALES[scaleId];
   if (!scale) return;
 
   currentScaleId = scaleId;
+  currentScaleAnswers = new Array(scale.questions.length).fill(-1);
+  scl90Page = 0;
 
-  // 检查今天是否已填过
   const today = new Date().toISOString().split("T")[0];
   const existing = await db.scaleEntries
     .where({ scale_type: scaleId, date: today })
     .first();
+
+  const totalQuestions = scale.questions.length;
 
   const overlay = document.createElement("div");
   overlay.id = "scale-overlay";
@@ -279,8 +470,9 @@ async function openScaleAssessment(scaleId) {
         <button class="scale-close" onclick="closeScaleAssessment()">✕</button>
         <div class="scale-icon">${scale.icon}</div>
         <h2>${scale.name}</h2>
-        <p class="scale-subtitle">${scale.timeframe} · ${scale.questions.length} 题 · 约 ${Math.ceil(scale.questions.length * 0.3)} 分钟</p>
-        ${existing ? `<p class="scale-today-done">⚠️ 您今天已完成此量表。再次填写将更新今天的结果。</p>` : ""}
+        <p class="scale-subtitle">${scale.timeframe} · ${totalQuestions} 题 · 约 ${Math.ceil(totalQuestions * 0.2)} 分钟</p>
+        ${scale.required === false ? '<p class="scale-optional-tag">📋 选做量表（不影响报告和警告）</p>' : ''}
+        ${existing ? '<p class="scale-today-done">⚠️ 您今天已完成此量表。再次填写将更新今天的结果。</p>' : ''}
         <button class="btn-primary" onclick="startScaleQuestions()" style="margin-top:12px;width:100%;">
           ${existing ? '🔄 重新评估' : '📝 开始评估'}
         </button>
@@ -293,26 +485,30 @@ async function openScaleAssessment(scaleId) {
   document.body.appendChild(overlay);
 }
 
-// 开始答题
 function startScaleQuestions() {
   const scale = SCALES[currentScaleId];
   if (!scale) return;
 
   currentScaleAnswers = new Array(scale.questions.length).fill(-1);
   currentScaleStep = 1;
+  scl90Page = 0;
 
   renderScaleQuestion();
 }
 
-// 渲染当前问题
 function renderScaleQuestion() {
   const scale = SCALES[currentScaleId];
   const dialog = document.getElementById("scale-dialog");
   if (!dialog) return;
 
+  // SCL-90 uses page-based rendering (10 questions per page)
+  if (scale.scoringLogic === "scl90") {
+    renderSCL90Page();
+    return;
+  }
+
   const qIdx = currentScaleAnswers.findIndex(a => a === -1);
   if (qIdx === -1) {
-    // 所有问题已答完
     showScaleResult();
     return;
   }
@@ -344,45 +540,136 @@ function renderScaleQuestion() {
     </div>`;
 }
 
-// 选择答案
+// SCL-90 分页渲染
+function renderSCL90Page() {
+  const scale = SCALES[currentScaleId];
+  const dialog = document.getElementById("scale-dialog");
+  if (!dialog) return;
+
+  const totalPages = Math.ceil(scale.questions.length / SCL90_PAGE_SIZE);
+  const startIdx = scl90Page * SCL90_PAGE_SIZE;
+  const endIdx = Math.min(startIdx + SCL90_PAGE_SIZE, scale.questions.length);
+  const pageQuestions = scale.questions.slice(startIdx, endIdx);
+
+  const answered = currentScaleAnswers.filter(a => a >= 0).length;
+  const progress = Math.round((answered / scale.questions.length) * 100);
+
+  dialog.innerHTML = `
+    <div class="scale-header">
+      <button class="scale-close" onclick="closeScaleAssessment()">✕</button>
+      <div class="scale-progress-bar">
+        <div class="scale-progress-fill" style="width:${progress}%"></div>
+      </div>
+      <span class="scale-progress-text">${answered} / ${scale.questions.length} · 第 ${scl90Page + 1}/${totalPages} 页</span>
+    </div>
+    <div class="scale-body scl90-body">
+      ${pageQuestions.map((q, i) => {
+        const qIdx = startIdx + i;
+        const val = currentScaleAnswers[qIdx];
+        return `
+        <div class="scl90-question-row ${val >= 4 ? 'scl90-severe' : val >= 3 ? 'scl90-moderate' : ''}">
+          <div class="scl90-q-num">${qIdx + 1}.</div>
+          <div class="scl90-q-text">${q}</div>
+          <div class="scl90-q-opts">
+            ${scale.options.map(opt => `
+              <button class="scl90-opt-btn ${val === opt.value ? 'selected' : ''}"
+                onclick="selectSCL90Answer(${qIdx}, ${opt.value})">${opt.label}</button>
+            `).join("")}
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+    <div class="scale-footer scl90-footer">
+      <div class="scl90-page-nav">
+        ${scl90Page > 0 ? `<button class="btn-text" onclick="scl90PrevPage()">← 上一页</button>` : '<span></span>'}
+        <span class="scl90-page-dots">${Array.from({length: totalPages}, (_, i) =>
+          `<span class="scl90-dot ${i === scl90Page ? 'active' : ''}
+            ${pageHasAnswers(i) ? 'filled' : ''}"
+            onclick="scl90GoPage(${i})"></span>`
+        ).join("")}</span>
+        ${scl90Page < totalPages - 1 ? `<button class="btn-primary" onclick="scl90NextPage()">下一页 →</button>` :
+          answered === scale.questions.length ? `<button class="btn-primary" onclick="showScaleResult()">✅ 完成评估</button>` :
+          `<button class="btn-secondary" onclick="scl90GoPage(${findFirstUnansweredPage()})">继续答题 →</button>`}
+      </div>
+    </div>`;
+}
+
+function pageHasAnswers(pageNum) {
+  const start = pageNum * SCL90_PAGE_SIZE;
+  const end = Math.min(start + SCL90_PAGE_SIZE, currentScaleAnswers.length);
+  return currentScaleAnswers.slice(start, end).some(a => a >= 0);
+}
+
+function findFirstUnansweredPage() {
+  const scale = SCALES[currentScaleId];
+  const totalPages = Math.ceil(scale.questions.length / SCL90_PAGE_SIZE);
+  for (let p = 0; p < totalPages; p++) {
+    const start = p * SCL90_PAGE_SIZE;
+    const end = Math.min(start + SCL90_PAGE_SIZE, scale.questions.length);
+    if (currentScaleAnswers.slice(start, end).some(a => a === -1)) return p;
+  }
+  return 0;
+}
+
+function selectSCL90Answer(qIdx, value) {
+  currentScaleAnswers[qIdx] = value;
+  renderSCL90Page();
+}
+
+function scl90NextPage() {
+  scl90Page++;
+  renderSCL90Page();
+}
+
+function scl90PrevPage() {
+  if (scl90Page > 0) { scl90Page--; renderSCL90Page(); }
+}
+
+function scl90GoPage(pageNum) {
+  scl90Page = pageNum;
+  renderSCL90Page();
+}
+
 function selectScaleAnswer(qIdx, value) {
   currentScaleAnswers[qIdx] = value;
   renderScaleQuestion();
 }
 
-// 上一题
 function prevScaleQuestion() {
-  // 找到当前题之前最后一个已答的题
   const answered = [];
   currentScaleAnswers.forEach((a, i) => { if (a >= 0) answered.push(i); });
   if (answered.length <= 1) return;
-
   const lastAnswered = answered[answered.length - 1];
-  currentScaleAnswers[lastAnswered] = -1; // 撤销最后一题
+  currentScaleAnswers[lastAnswered] = -1;
   renderScaleQuestion();
 }
 
-// 显示结果
+// ==================== 结果页 ====================
+
 async function showScaleResult() {
   const scale = SCALES[currentScaleId];
   const dialog = document.getElementById("scale-dialog");
   if (!dialog) return;
 
-  // 计算总分
-  const totalScore = currentScaleAnswers.reduce((s, a) => s + a, 0);
-  const severity = getSeverity(currentScaleId, totalScore, currentScaleAnswers);
-  const flagMsg = checkFlags(currentScaleId, currentScaleAnswers);
+  const isRequired = scale.required !== false;
 
-  // 保存到数据库
-  await saveScaleResult(currentScaleId, totalScore, [...currentScaleAnswers], severity.label);
-
-  // 如果是 C-SSRS 高风险，触发危机干预
-  if (currentScaleId === "cssrs" && (severity.min >= 2)) {
-    setTimeout(() => showCrisisIntervention(), 500);
+  // SCL-90 special scoring
+  if (scale.scoringLogic === "scl90") {
+    showSCL90Result();
+    return;
   }
 
-  // 如果是 PHQ-9 Q9 ≥ 2，提示做 C-SSRS
-  if (currentScaleId === "phq9" && currentScaleAnswers[8] >= 2) {
+  const totalScore = currentScaleAnswers.reduce((s, a) => s + a, 0);
+  const severity = getSeverity(currentScaleId, totalScore, currentScaleAnswers);
+  const flagMsg = isRequired ? checkFlags(currentScaleId, currentScaleAnswers) : null;
+
+  await saveScaleResult(currentScaleId, totalScore, [...currentScaleAnswers], severity.label);
+
+  // Crisis intervention (required scales only)
+  if (isRequired && currentScaleId === "cssrs" && severity.min >= 2) {
+    setTimeout(() => showCrisisIntervention(), 500);
+  }
+  if (isRequired && currentScaleId === "phq9" && currentScaleAnswers[8] >= 2) {
     setTimeout(() => {
       if (confirm("⚠️ 您在 PHQ-9 中报告了自杀意念。\n\n建议立即完成 C-SSRS 自杀风险评估量表。\n\n是否现在进行评估？")) {
         closeScaleAssessment();
@@ -423,9 +710,84 @@ async function showScaleResult() {
     </div>`;
 }
 
-// 量表解读文案
+// SCL-90 专用结果页
+async function showSCL90Result() {
+  const scale = SCALES.scl90;
+  const dialog = document.getElementById("scale-dialog");
+  if (!dialog) return;
+
+  const factorResult = getSCL90Factors(currentScaleAnswers);
+  const severity = getSeverity("scl90", factorResult.total, currentScaleAnswers);
+
+  await saveScaleResult("scl90", factorResult.total, [...currentScaleAnswers], severity.label);
+
+  const factorColors = factorResult.factors.map(f => {
+    if (f.avg >= 3.0) return "#C0392B";
+    if (f.avg >= 2.0) return "#F4A261";
+    return "#27ae60";
+  });
+
+  dialog.innerHTML = `
+    <div class="scale-header">
+      <button class="scale-close" onclick="closeScaleAssessment()">✕</button>
+      <div class="scale-icon">${severity.emoji}</div>
+      <h2>SCL-90 评估完成</h2>
+    </div>
+    <div class="scale-body">
+      <div class="scale-result-card" style="border-left: 4px solid ${severity.color};">
+        <div class="scale-result-score" style="color:${severity.color};">${factorResult.total} 分</div>
+        <div class="scale-result-label" style="color:${severity.color};">GSI ${factorResult.gsi} · ${severity.label}</div>
+      </div>
+
+      <div class="scl90-stats">
+        <div class="scl90-stat-item">
+          <div class="scl90-stat-val">${factorResult.total}</div>
+          <div class="scl90-stat-lbl">总分 (90-450)</div>
+        </div>
+        <div class="scl90-stat-item">
+          <div class="scl90-stat-val">${factorResult.gsi}</div>
+          <div class="scl90-stat-lbl">总均分 GSI</div>
+        </div>
+        <div class="scl90-stat-item">
+          <div class="scl90-stat-val">${factorResult.pst}</div>
+          <div class="scl90-stat-lbl">阳性项目数</div>
+        </div>
+        <div class="scl90-stat-item">
+          <div class="scl90-stat-val">${factorResult.psdi}</div>
+          <div class="scl90-stat-lbl">阳性均分 PSDI</div>
+        </div>
+      </div>
+
+      <div class="scale-answers-summary" style="margin-top:12px;">
+        <h4>📊 因子分</h4>
+        <div class="scl90-factor-table">
+          <div class="scl90-factor-header">
+            <span>因子</span><span>均分</span><span>阳性</span><span>评估</span>
+          </div>
+          ${factorResult.factors.map((f, i) => `
+            <div class="scl90-factor-row" style="border-left:3px solid ${factorColors[i]};">
+              <span class="scl90-factor-name">${f.name}</span>
+              <span class="scl90-factor-avg" style="color:${factorColors[i]};">${f.avg}</span>
+              <span class="scl90-factor-pos">${f.positiveCount > 0 ? f.positiveCount : '—'}</span>
+              <span class="scl90-factor-level" style="color:${factorColors[i]};">
+                ${f.avg >= 3.0 ? '⚠️ 重度' : f.avg >= 2.0 ? '🟡 异常' : '✅ 正常'}
+              </span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+
+      ${getScaleInterpretation("scl90", factorResult.total, severity)}
+    </div>
+    <div class="scale-footer">
+      <button class="btn-secondary" onclick="closeScaleAssessment()">关闭</button>
+      <button class="btn-primary" onclick="startScaleQuestions()">🔄 重新评估</button>
+    </div>`;
+}
+
+// ==================== 量表解读 ====================
+
 function getScaleInterpretation(scaleId, score, severity) {
-  // PHQ-9
   if (scaleId === "phq9") {
     if (score <= 4) return `<div class="scale-interp"><p>✅ 目前无明显抑郁症状。如有需要，建议定期自评。</p></div>`;
     if (score <= 9) return `<div class="scale-interp"><p>🟡 存在轻度抑郁症状。建议：</p><ul><li>保持规律作息和运动</li><li>记录情绪变化，观察趋势</li><li>如持续2周以上未改善，建议就医</li></ul></div>`;
@@ -434,7 +796,6 @@ function getScaleInterpretation(scaleId, score, severity) {
     return `<div class="scale-interp"><p>🔴 重度抑郁。请立即行动：</p><ul><li>尽快就医（精神科急诊或门诊）</li><li>如有自杀计划，立即拨打心理援助热线：<b>400-161-9995</b></li><li>不要让药物调整自行进行</li><li>确保24小时有人陪伴</li></ul></div>`;
   }
 
-  // GAD-7
   if (scaleId === "gad7") {
     if (score <= 4) return `<div class="scale-interp"><p>✅ 目前无明显焦虑症状。</p></div>`;
     if (score <= 9) return `<div class="scale-interp"><p>🟡 轻度焦虑。建议练习深呼吸、正念冥想等放松技巧。</p></div>`;
@@ -442,7 +803,6 @@ function getScaleInterpretation(scaleId, score, severity) {
     return `<div class="scale-interp"><p>🔴 重度焦虑。建议尽早就医，考虑药物治疗和心理治疗联合。</p></div>`;
   }
 
-  // C-SSRS
   if (scaleId === "cssrs") {
     if (score === 0) return `<div class="scale-interp"><p>✅ 目前无自杀意念或行为。请继续保持。</p></div>`;
     if (score === 1) return `<div class="scale-interp"><p>🟡 <b>存在自杀意念。</b>请：</p><ul><li>将感受告诉医生或信任的人</li><li>制定安全计划</li><li>保存紧急联系方式</li><li>心理援助热线：<b>400-161-9995</b></li></ul></div>`;
@@ -450,27 +810,34 @@ function getScaleInterpretation(scaleId, score, severity) {
     return `<div class="scale-interp"><p>🚨 <b>极高风险：有自杀行为。</b></p><ul><li>请立即就医（精神科急诊）</li><li>不要独处</li><li>心理援助热线：<b>400-161-9995</b></li><li>紧急情况拨打 <b>120</b> 或 <b>110</b></li></ul></div>`;
   }
 
-  // DSHI
   if (scaleId === "dshi") {
     if (score === 0) return `<div class="scale-interp"><p>✅ 无自伤行为史。</p></div>`;
     return `<div class="scale-interp"><p>⚠️ 有自伤行为史。建议：</p><ul><li>在就诊时告知医生</li><li>自伤通常与情绪调节困难有关</li><li>DBT（辩证行为疗法）对减少自伤行为有循证支持</li><li>如当前仍有强烈自伤冲动，请拨打 <b>400-161-9995</b></li></ul></div>`;
   }
 
+  if (scaleId === "scl90") {
+    // score = total score (90-450)
+    if (score <= 135) return `<div class="scale-interp"><p>✅ GSI在正常范围内，整体心理健康状况良好。</p><p style="font-size:0.8rem;color:var(--text-light);margin-top:4px;">注：此为自评工具，不能替代专业诊断。如有疑虑请咨询医生。</p></div>`;
+    if (score <= 180) return `<div class="scale-interp"><p>🟡 轻度异常。某些因子分偏高，建议：</p><ul><li>关注因子分≥2的维度</li><li>保持定期自评，观察变化</li><li>如持续异常，建议就医咨询</li></ul></div>`;
+    if (score <= 225) return `<div class="scale-interp"><p>🟠 中度异常。多个维度存在问题，建议：</p><ul><li>预约精神科或心理科评估</li><li>重点关注因子分≥2.5的维度</li><li>阳性项目数较多提示症状广泛</li></ul></div>`;
+    return `<div class="scale-interp"><p>🔴 明显异常。强烈建议：</p><ul><li>尽快就医进行全面评估</li><li>携带本次评估结果供医生参考</li><li>如有自杀意念请立即寻求帮助：<b>400-161-9995</b></li></ul></div>`;
+  }
+
   return "";
 }
 
-// 关闭量表弹窗
 function closeScaleAssessment() {
   const overlay = document.getElementById("scale-overlay");
   if (overlay) overlay.remove();
   currentScaleId = null;
   currentScaleAnswers = [];
   currentScaleStep = 0;
-  // 刷新统计页的量表卡片
+  scl90Page = 0;
   if (typeof renderScaleCards === "function") renderScaleCards();
+  if (typeof renderScaleTrendChart === "function") renderScaleTrendChart();
 }
 
-// ==================== 危机干预流程 ====================
+// ==================== 危机干预 ====================
 
 function showCrisisIntervention() {
   const overlay = document.createElement("div");
@@ -507,7 +874,7 @@ function showCrisisIntervention() {
         </div>
         <div class="crisis-actions">
           <p style="margin-top:12px;font-size:0.9rem;color:var(--text-light);">
-            💡 你可以在设置中添加紧急联系人，当你需要帮助时一键呼叫。
+            💡 你可以在设置中添加紧急联系人。
           </p>
         </div>
       </div>
@@ -521,14 +888,23 @@ function showCrisisIntervention() {
   document.body.appendChild(overlay);
 }
 
-// ==================== 量表历史记录 ====================
+// ==================== 量表历史 ====================
 
 async function showScaleHistory(scaleId) {
   const scale = SCALES[scaleId];
-  const history = await getScaleHistory(scaleId, 20);
+  const history = await getScaleHistory(scaleId, 365);
 
   const dialog = document.getElementById("scale-dialog");
   if (!dialog) return;
+
+  // SCL-90 history uses GSI for scoring label
+  const getScoreDisplay = (h) => {
+    if (scale.scoringLogic === "scl90") {
+      const gsi = Math.round((h.total_score / 90) * 100) / 100;
+      return { score: `${h.total_score}分`, gsi: gsi };
+    }
+    return { score: `${h.total_score} 分` };
+  };
 
   dialog.innerHTML = `
     <div class="scale-header">
@@ -547,11 +923,13 @@ async function showScaleHistory(scaleId) {
             else if (delta !== null && delta < 0) deltaStr = `<span style="color:#27ae60;">↓${Math.abs(delta)}</span>`;
             else if (delta !== null) deltaStr = `<span style="color:#636e72;">→0</span>`;
 
+            const sd = getScoreDisplay(h);
+
             return `
             <div class="scale-history-item" style="border-left: 3px solid ${sev.color};">
               <div class="scale-history-top">
                 <span class="scale-history-date">${h.date}</span>
-                <span class="scale-history-score" style="color:${sev.color};">${h.total_score} 分 · ${sev.label}</span>
+                <span class="scale-history-score" style="color:${sev.color};">${sd.score} · ${sev.label}${sd.gsi ? ' (GSI ' + sd.gsi + ')' : ''}</span>
                 ${delta !== null ? `<span style="font-size:0.8rem;">${deltaStr}</span>` : ""}
               </div>
             </div>`;
@@ -567,35 +945,44 @@ async function renderScaleCards() {
   const container = document.getElementById("scale-cards-container");
   if (!container) return;
 
-  const scales = [
-    { id: "phq9", desc: "9题 · 2分钟 · 筛查抑郁严重度" },
-    { id: "gad7", desc: "7题 · 1分钟 · 筛查焦虑严重度" },
-    { id: "cssrs", desc: "6题 · 2分钟 · 评估自杀风险 (哥伦比亚量表)", cls: "scale-card-deep" },
-    { id: "dshi", desc: "9题 · 3分钟 · 自伤行为筛查", cls: "scale-card-deep" }
-  ];
+  // 分必做和选做
+  const requiredScales = [];
+  const optionalScales = [];
 
-  const cards = await Promise.all(scales.map(async (s) => {
-    const scale = SCALES[s.id];
+  Object.entries(SCALES).forEach(([id, scale]) => {
+    const desc = scale.scoringLogic === "scl90" ? "90题 · 10-15分钟 · 全面症状评估" :
+                 id === "phq9" ? "9题 · 2分钟 · 筛查抑郁严重度" :
+                 id === "gad7" ? "7题 · 1分钟 · 筛查焦虑严重度" :
+                 id === "cssrs" ? "6题 · 2分钟 · 评估自杀风险 (哥伦比亚量表)" :
+                 id === "dshi" ? "9题 · 3分钟 · 自伤行为筛查" : "";
+    const cls = (id === "cssrs" || id === "dshi") ? "scale-card-deep" : "";
+    const item = { id, scale, desc, cls };
+    if (scale.required !== false) requiredScales.push(item);
+    else optionalScales.push(item);
+  });
+
+  async function renderCard(s) {
     const latest = await getLatestScaleResult(s.id);
     let statusHtml = "";
-
     if (latest) {
       const sev = getSeverity(s.id, latest.total_score, latest.answers);
+      const scoreText = s.scale.scoringLogic === "scl90"
+        ? `${latest.total_score}分 · GSI ${Math.round((latest.total_score/90)*100)/100}`
+        : `${latest.total_score}分`;
       statusHtml = `
         <div class="scale-card-status">
           <span class="scale-card-date">最近: ${latest.date.slice(5)}</span>
-          <span class="scale-card-severity" style="color:${sev.color};">${sev.emoji} ${latest.total_score}分 · ${sev.label}</span>
+          <span class="scale-card-severity" style="color:${sev.color};">${sev.emoji} ${scoreText} · ${sev.label}</span>
         </div>`;
     } else {
       statusHtml = `<div class="scale-card-status"><span class="scale-card-date" style="color:var(--text-light);">尚未评估</span></div>`;
     }
-
     return `
-      <div class="scale-card ${s.cls || ""}">
+      <div class="scale-card ${s.cls}">
         <div class="scale-card-top">
-          <span class="scale-card-icon">${scale.icon}</span>
+          <span class="scale-card-icon">${s.scale.icon}</span>
           <div class="scale-card-info">
-            <div class="scale-card-name">${scale.shortName}</div>
+            <div class="scale-card-name">${s.scale.shortName}${s.scale.required === false ? ' <span style="font-size:0.65rem;color:var(--text-light);">选做</span>' : ''}</div>
             <div class="scale-card-desc">${s.desc}</div>
           </div>
         </div>
@@ -604,23 +991,151 @@ async function renderScaleCards() {
           ${latest ? '🔄 重新评估' : '📝 开始评估'}
         </button>
       </div>`;
-  }));
+  }
 
-  container.innerHTML = cards.join("");
+  // 必做量表
+  const requiredHtml = (await Promise.all(requiredScales.map(renderCard))).join("");
+
+  // 选做量表
+  let optionalHtml = "";
+  if (optionalScales.length > 0) {
+    const cards = (await Promise.all(optionalScales.map(renderCard))).join("");
+    optionalHtml = `
+      <div class="scale-optional-divider">
+        <span>📋 其他量表（选做，不影响报告）</span>
+      </div>
+      ${cards}`;
+  }
+
+  container.innerHTML = requiredHtml + optionalHtml;
+}
+
+// ==================== 量表趋势图 ====================
+
+let scaleTrendChartInstance = null;
+
+async function renderScaleTrendChart() {
+  const canvas = document.getElementById("scale-trend-chart");
+  if (!canvas) return;
+
+  const select = document.getElementById("scale-trend-select");
+  const scaleId = select?.value || "phq9";
+  const scale = SCALES[scaleId];
+  if (!scale) return;
+
+  const history = await getScaleHistory(scaleId, 90);
+  // 按日期升序排列
+  history.reverse();
+
+  if (scaleTrendChartInstance) {
+    scaleTrendChartInstance.destroy();
+    scaleTrendChartInstance = null;
+  }
+
+  const ctx = canvas.getContext("2d");
+
+  if (history.length === 0) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "14px 'PingFang SC', 'Microsoft YaHei', sans-serif";
+    ctx.fillStyle = "#999";
+    ctx.textAlign = "center";
+    ctx.fillText("暂无数据 — 请至少完成一次评估", canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  const labels = history.map(h => {
+    const d = h.date.split("-");
+    return d[1] + "/" + d[2];
+  });
+
+  // For SCL-90, show GSI instead of total score for better readability
+  const scores = history.map(h => {
+    if (scale.scoringLogic === "scl90") {
+      return Math.round((h.total_score / 90) * 100) / 100;
+    }
+    return h.total_score;
+  });
+
+  const pointColors = history.map(h => {
+    const sev = getSeverity(scaleId, h.total_score, h.answers);
+    return sev?.color || "#636e72";
+  });
+
+  scaleTrendChartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: scale.scoringLogic === "scl90" ? "GSI (总均分)" : "总分",
+        data: scores,
+        borderColor: "#5B8C5A",
+        backgroundColor: "rgba(91,140,90,0.08)",
+        borderWidth: 2.5,
+        tension: 0.35,
+        pointRadius: 5,
+        pointBackgroundColor: pointColors,
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+        pointHoverRadius: 7,
+        fill: true,
+        spanGaps: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: "index"
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const h = history[ctx.dataIndex];
+              if (!h) return "";
+              const sev = getSeverity(scaleId, h.total_score, h.answers);
+              if (scale.scoringLogic === "scl90") {
+                const gsi = Math.round((h.total_score / 90) * 100) / 100;
+                return `GSI ${gsi} · ${sev?.label || ""} (总分${h.total_score})`;
+              }
+              return `${h.total_score} 分 · ${sev?.label || ""}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          grid: { color: "#f0f0f0" },
+          ticks: { font: { size: 10 } },
+          title: {
+            display: true,
+            text: scale.scoringLogic === "scl90" ? "GSI (总均分)" : "量表总分",
+            font: { size: 10 }
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 9 }, maxRotation: 45 }
+        }
+      }
+    }
+  });
 }
 
 // ==================== 报告数据收集 ====================
 
-// 获取报告所需的量表数据
 async function collectScaleDataForReport(days) {
   const since = new Date();
   since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString().split("T")[0];
 
-  const scales = ["phq9", "gad7", "cssrs", "dshi"];
+  // 只收集必做量表 (required !== false)
+  const scaleIds = Object.keys(SCALES).filter(id => SCALES[id].required !== false);
   const result = {};
 
-  for (const scaleId of scales) {
+  for (const scaleId of scaleIds) {
     const all = await db.scaleEntries
       .where("scale_type")
       .equals(scaleId)
@@ -653,7 +1168,7 @@ function injectScaleStyles() {
     /* 量表弹窗 */
     .scale-dialog {
       background: #fff; border-radius: 16px; padding: 20px;
-      max-width: 480px; width: 90vw; max-height: 90vh; overflow-y: auto;
+      max-width: 520px; width: 92vw; max-height: 92vh; overflow-y: auto;
       box-shadow: 0 20px 60px rgba(0,0,0,0.2);
     }
     .scale-header { text-align: center; position: relative; margin-bottom: 16px; }
@@ -667,6 +1182,10 @@ function injectScaleStyles() {
     .scale-today-done {
       background: #FFF3E0; color: #E67E22; font-size: 0.8rem;
       padding: 8px 12px; border-radius: 8px; margin-top: 8px;
+    }
+    .scale-optional-tag {
+      display: inline-block; background: #e8f4fd; color: #2980b9;
+      font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; margin-top: 6px;
     }
 
     /* 进度条 */
@@ -694,8 +1213,64 @@ function injectScaleStyles() {
     }
     .scale-option-btn:hover { border-color: var(--primary); background: #f0f7f0; }
     .scale-option-btn:active { transform: scale(0.98); }
-
     .scale-footer { display: flex; justify-content: space-between; padding-top: 8px; }
+
+    /* SCL-90 分页样式 */
+    .scl90-body { max-height: 55vh; overflow-y: auto; }
+    .scl90-question-row {
+      padding: 10px 8px; border-radius: 8px; margin-bottom: 6px;
+      background: #fafafa; transition: background 0.2s;
+    }
+    .scl90-question-row.scl90-moderate { background: #FFF8E1; }
+    .scl90-question-row.scl90-severe { background: #FFEBEE; }
+    .scl90-q-num { font-size: 0.75rem; color: var(--text-light); margin-bottom: 2px; }
+    .scl90-q-text { font-size: 0.85rem; color: var(--text); line-height: 1.4; margin-bottom: 6px; }
+    .scl90-q-opts { display: flex; gap: 4px; flex-wrap: wrap; }
+    .scl90-opt-btn {
+      padding: 5px 10px; border-radius: 14px; border: 1px solid #ddd;
+      background: #fff; font-size: 0.7rem; cursor: pointer; white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .scl90-opt-btn.selected {
+      background: var(--primary); color: #fff; border-color: var(--primary);
+      font-weight: 600;
+    }
+    .scl90-footer { padding-top: 10px; border-top: 1px solid #eee; }
+    .scl90-page-nav { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+    .scl90-page-dots { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+    .scl90-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #ddd;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .scl90-dot.active { background: var(--primary); transform: scale(1.5); }
+    .scl90-dot.filled { background: #a0c4a0; }
+
+    /* SCL-90 结果统计 */
+    .scl90-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .scl90-stat-item { text-align: center; background: #f8f9fa; padding: 10px 6px; border-radius: 8px; }
+    .scl90-stat-val { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+    .scl90-stat-lbl { font-size: 0.7rem; color: var(--text-light); margin-top: 2px; }
+
+    /* SCL-90 因子表格 */
+    .scl90-factor-table {
+      background: #fff; border-radius: 8px; overflow: hidden;
+      border: 1px solid #e9ecef;
+    }
+    .scl90-factor-header {
+      display: grid; grid-template-columns: 2fr 1fr 0.8fr 1.2fr;
+      padding: 8px 10px; background: #f8f9fa; font-size: 0.72rem;
+      font-weight: 600; color: var(--text-light);
+    }
+    .scl90-factor-row {
+      display: grid; grid-template-columns: 2fr 1fr 0.8fr 1.2fr;
+      padding: 7px 10px; font-size: 0.78rem; align-items: center;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .scl90-factor-row:last-child { border-bottom: none; }
+    .scl90-factor-name { color: var(--text); font-weight: 500; }
+    .scl90-factor-avg { font-weight: 600; }
+    .scl90-factor-pos { color: var(--text-light); text-align: center; }
+    .scl90-factor-level { font-size: 0.7rem; font-weight: 500; }
 
     /* 结果页 */
     .scale-result-card {
@@ -735,7 +1310,7 @@ function injectScaleStyles() {
     /* 历史 */
     .scale-history-list { display: flex; flex-direction: column; gap: 8px; }
     .scale-history-item { padding: 10px 12px; border-radius: 8px; background: #f8f9fa; }
-    .scale-history-top { display: flex; align-items: center; gap: 10px; }
+    .scale-history-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .scale-history-date { font-size: 0.85rem; font-weight: 600; color: var(--text); }
     .scale-history-score { font-size: 0.85rem; font-weight: 600; }
     .scale-empty {
@@ -743,7 +1318,7 @@ function injectScaleStyles() {
       font-size: 0.9rem;
     }
 
-    /* 卡片区 (统计页) */
+    /* 卡片区 */
     .scale-cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     @media (max-width: 420px) { .scale-cards-grid { grid-template-columns: 1fr; } }
     .scale-card {
@@ -765,12 +1340,22 @@ function injectScaleStyles() {
       border-radius: 8px; font-size: 0.85rem; cursor: pointer;
     }
     .btn-scale-start:hover { opacity: 0.9; }
-    .scale-section-divider {
+
+    /* 选做量表分隔线 */
+    .scale-optional-divider {
+      grid-column: 1 / -1;
       display: flex; align-items: center; gap: 8px;
       margin: 10px 0 6px; font-size: 0.75rem; color: var(--text-light);
     }
-    .scale-section-divider::before, .scale-section-divider::after {
+    .scale-optional-divider::before, .scale-optional-divider::after {
       content: ""; flex: 1; height: 1px; background: #e0e0e0;
+    }
+
+    /* 趋势图 */
+    #scale-trend-section .chart-container { height: 220px; margin-top: 8px; }
+    #scale-trend-select {
+      width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px;
+      font-size: 0.85rem; background: #fff; margin-bottom: 8px;
     }
 
     /* 危机弹窗 */
@@ -798,5 +1383,4 @@ function injectScaleStyles() {
   document.head.appendChild(style);
 }
 
-// 初始化：注入样式
 injectScaleStyles();

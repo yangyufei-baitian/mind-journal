@@ -41,7 +41,7 @@ function switchPage(pageName) {
     document.getElementById("page-title").textContent = pageTitles[pageName] || pageName;
 
     try {
-        if (pageName === "stats") { buildSingleSymptomSelector(); loadCharts(); renderScaleCards(); }
+        if (pageName === "stats") { buildSingleSymptomSelector(); loadCharts(); renderScaleCards(); renderScaleTrendChart(); }
         else if (pageName === "music") { loadMusicList(); }
         else if (pageName === "settings") { loadContactList(); loadConsentSettings(); }
         else if (pageName === "record") { updateTodaySummary(); loadWeeklySummary(); renderMedicationCheckins(); }

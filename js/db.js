@@ -528,3 +528,14 @@ async function getPillsTakenSoFar(userMedId) {
     const all = await db.medicationLog.toArray();
     return all.filter(e => e.user_med_id === userMedId).length;
 }
+
+// ==================== 量表评估同步辅助 (v4+) ====================
+
+async function getAllUnsyncedScales() {
+  const all = await db.scaleEntries.toArray();
+  return all.filter(e => !e.synced);
+}
+
+async function markScaleSynced(id) {
+  return await db.scaleEntries.update(id, { synced: true });
+}
