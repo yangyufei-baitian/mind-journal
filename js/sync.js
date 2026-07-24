@@ -30,6 +30,17 @@ async function syncData() {
     let syncedCount = 0;
     let errors = [];
 
+    // 0. 确保用户已在后端注册（静默，已有则返回 is_new:false）
+    try {
+        await fetch(`${API_BASE}/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ anonymous_id: userId })
+        });
+    } catch (e) {
+        // 静默失败，后续同步会暴露真正的错误
+    }
+
     // 1. 同步情绪记录
     if (settings.share_mood) {
         const unsynced = await getAllUnsyncedMoods();
