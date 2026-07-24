@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#5B8C5A">
     <meta name="description" content="心灵日记 - 精神健康记录助手">
     <title>心灵日记</title>
-    <link rel="stylesheet" href="css/style.css?v=8">
-    <script>window._HTML_VER = "v3-313cb23";</script>
+    <link rel="stylesheet" href="css/style.css?v=9">
+    <script>window._HTML_VER = "v3-med01";</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
 </head>
@@ -79,6 +79,14 @@
                 📋 展开症状列表 (39项)
             </button>
             <div id="symptom-list" style="display:none;"></div>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">💊 服药打卡</h2>
+            <div id="medication-checkin-area">
+                <p class="med-empty-hint">点击下方按钮添加你的药品</p>
+            </div>
+            <button class="btn-secondary" onclick="showMedicationManager()" style="margin-top:8px;">➕ 管理药品</button>
         </section>
 
         <section class="card">
@@ -258,19 +266,31 @@
 
     <div id="toast" class="toast hidden"></div>
 
-    <!-- JS 加载顺序: config → symptom-config → db → ambient/music/charts/contacts/sync → app -->
+    <!-- 服药管理弹窗 -->
+    <div id="med-manager-overlay" class="med-overlay" style="display:none;">
+        <div id="med-manager-content" class="med-manager-dialog"></div>
+    </div>
+
+    <!-- 药品详情弹窗 -->
+    <div id="med-detail-overlay" class="med-overlay" style="display:none;">
+        <div id="med-detail-content" class="med-detail-dialog"></div>
+    </div>
+
+    <!-- JS 加载顺序: config → symptom-config → medication-db → db → medication → ambient/music/charts/contacts/sync → app -->
     <script>
         // 生产环境后端地址 (部署 Vercel 时生效)
         window.MJ_API_BASE = "https://mind-journal-api.onrender.com/api";
     </script>
-    <script src="js/symptom-config.js?v=8"></script>
-    <script src="js/db.js?v=8"></script>
-    <script src="js/ambient-sounds.js?v=8"></script>
-    <script src="js/charts.js?v=8"></script>
-    <script src="js/music.js?v=8"></script>
-    <script src="js/contacts.js?v=8"></script>
-    <script src="js/sync.js?v=8"></script>
-    <script src="js/app.js?v=8"></script>
+    <script src="js/symptom-config.js?v=9"></script>
+    <script src="js/medication-db.js?v=9"></script>
+    <script src="js/db.js?v=9"></script>
+    <script src="js/medication.js?v=9"></script>
+    <script src="js/ambient-sounds.js?v=9"></script>
+    <script src="js/charts.js?v=9"></script>
+    <script src="js/music.js?v=9"></script>
+    <script src="js/contacts.js?v=9"></script>
+    <script src="js/sync.js?v=9"></script>
+    <script src="js/app.js?v=9"></script>
     <script>
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("./sw.js")

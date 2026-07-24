@@ -26,7 +26,7 @@ const TIME_PERIODS = [
 
 const db = new Dexie("MindJournalDB");
 
-db.version(2).stores({
+db.version(3).stores({
     // 情绪记录: date + time_period 作为复合唯一键
     moodEntries: "++id, [date+time_period], date, time_period, synced",
     // 症状记录: 每条记录包含 date + time_period + 选中的症状
@@ -35,7 +35,10 @@ db.version(2).stores({
     contacts: "++id",
     musicTracks: "++id",
     consentSettings: "++id",
-    userInfo: "++id"
+    userInfo: "++id",
+    // v3: 服药管理
+    userMedications: "++id, med_id",
+    medicationLog: "++id, [user_med_id+date+period], user_med_id, date, period"
 });
 
 // ==================== 用户信息 ====================
@@ -388,4 +391,108 @@ async function clearAllData() {
     await db.diaryEntries.clear();
     await db.contacts.clear();
     await db.musicTracks.clear();
+}
+
+// ==================== 服药管理 (v3) ====================
+
+async function addUserMedication(med) {
+    return await db.userMedications.add({
+        med_id: med.med_id,
+        custom_dose: med.custom_dose || "",
+        dose_unit: med.dose_unit || "mg",
+        pills_per_dose: med.pills_per_dose || 1,
+        frequency: med.frequency || { morning: false, noon: false, evening: false, bedtime: false },
+        total_pills: med.total_pills || 28,
+        start_date: med.start_date || new Date().toISOString().split("T")[0],
+        notes: med.notes || "",
+        created_at: new Date().toISOString()
+    });
+}
+
+async function getUserMedications() {
+    return await db.userMedications.toArray();
+}
+
+async function updateUserMedication(id, updates) {
+    return await db.userMedications.update(id, { ...updates, updated_at: new Date().toISOString() });
+}
+
+async function removeUserMedication(id) {
+    // 同时删除该药品的所有打卡记录
+    const logs = await db.medicationLog.where("user_med_id").equals(id).toArray();
+    for (const log of logs) {
+        await db.medicationLog.delete(log.id);
+    }
+    return await db.userMedications.delete(id);
+}
+
+// 获取某药品的所有打卡记录
+async function getMedicationLogs(userMedId, sinceDate) {
+    const all = await db.medicationLog.toArray();
+    let filtered = all.filter(e => e.user_med_id === userMedId);
+    if (sinceDate) {
+        filtered = filtered.filter(e => e.date >= sinceDate);
+    }
+    return filtered;
+}
+
+// 今日打卡状态
+async function getTodayMedicationLog(userMedId) {
+    const today = new Date().toISOString().split("T")[0];
+    const all = await db.medicationLog.toArray();
+    return all.filter(e => e.user_med_id === userMedId && e.date === today);
+}
+
+// 打卡/取消打卡
+async function toggleMedicationCheck(userMedId, date, period) {
+    const all = await db.medicationLog.toArray();
+    const existing = all.find(e => e.user_med_id === userMedId && e.date === date && e.period === period);
+    if (existing) {
+        await db.medicationLog.delete(existing.id);
+        return false; // 取消打卡
+    }
+    await db.medicationLog.add({
+        user_med_id: userMedId,
+        date: date,
+        period: period,
+        taken_at: new Date().toISOString()
+    });
+    return true; // 打卡成功
+}
+
+// 计算余量
+function calculatePillRemaining(userMed) {
+    const today = new Date().toISOString().split("T")[0];
+    const startDate = userMed.start_date;
+
+    // 计算从开始日期到今天过了多少天
+    const start = new Date(startDate);
+    const now = new Date(today);
+    const daysElapsed = Math.max(0, Math.floor((now - start) / (1000 * 60 * 60 * 24)));
+
+    // 每天需要的粒数
+    const freq = userMed.frequency || {};
+    const dosesPerDay = (freq.morning ? 1 : 0) + (freq.noon ? 1 : 0) +
+                        (freq.evening ? 1 : 0) + (freq.bedtime ? 1 : 0);
+    const pillsPerDay = dosesPerDay * (userMed.pills_per_dose || 1);
+
+    const pillsTaken = daysElapsed * pillsPerDay;
+    const remaining = Math.max(0, userMed.total_pills - pillsTaken);
+    const daysLeft = pillsPerDay > 0 ? Math.floor(remaining / pillsPerDay) : 0;
+
+    let warningLevel = "normal"; // normal | warning | danger
+    if (daysLeft <= 3) warningLevel = "danger";
+    else if (daysLeft <= 7) warningLevel = "warning";
+
+    return { remaining, daysLeft, pillsPerDay, warningLevel, dosesPerDay };
+}
+
+// 获取药品预设信息
+function getMedicationInfo(medId) {
+    return MEDICATION_DB.find(m => m.id === medId) || null;
+}
+
+async function getPillsTakenSoFar(userMedId) {
+    const all = await db.medicationLog.toArray();
+    return all.filter(e => e.user_med_id === userMedId).length;
 }
