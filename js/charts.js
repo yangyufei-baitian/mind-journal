@@ -26,7 +26,8 @@ async function loadCharts() {
 
 async function loadDailyCurve() {
     const today = new Date().toISOString().split("T")[0];
-    const todayMoods = await db.moodEntries.where("date").equals(today).toArray();
+    const allMoods = await db.moodEntries.toArray();
+    const todayMoods = allMoods.filter(e => e.date === today);
 
     // 构建7个时段的标签和数据
     const labels = TIME_PERIODS.map(tp =>
@@ -350,8 +351,10 @@ async function showDailyDetail(dateStr) {
 
     title.textContent = `\u{1F4CB} ${dateStr} 详情`;
 
-    const allMoods = await db.moodEntries.where("date").equals(dateStr).toArray();
-    const allSymptoms = await db.symptomEntries.where("date").equals(dateStr).toArray();
+    const allMoodsArr = await db.moodEntries.toArray();
+    const allMoods = allMoodsArr.filter(e => e.date === dateStr);
+    const allSymptomArr = await db.symptomEntries.toArray();
+    const allSymptoms = allSymptomArr.filter(e => e.date === dateStr);
 
     if (allMoods.length === 0 && allSymptoms.length === 0) {
         content.innerHTML = '<p style="color:var(--text-muted);text-align:center;">当天没有记录</p>';
