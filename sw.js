@@ -2,7 +2,7 @@
    sw.js — Service Worker (PWA 离线缓存)
    ============================================ */
 
-const CACHE_NAME = "mind-journal-v0.9";
+const CACHE_NAME = "mind-journal-v0.10";
 const STATIC_ASSETS = [
     "./",
     "./index.html",
@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
     "./js/ambient-sounds.js",
     "./js/db.js",
     "./js/medication.js",
+    "./js/report.js",
     "./js/app.js",
     "./js/charts.js",
     "./js/music.js",
@@ -20,7 +21,8 @@ const STATIC_ASSETS = [
     "./manifest.json",
     // CDN 资源（首次访问后缓存）
     "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js",
-    "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"
+    "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js",
+    "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
 ];
 
 // 安装：预缓存静态资源
