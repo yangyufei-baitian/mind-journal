@@ -24,6 +24,7 @@ const API_BASE = (() => {
 })();
 
 async function syncData() {
+    try { showToast("Step1: 读取设置..."); } catch(e) {}
     const settings = await getConsentSettings();
 
     if (!settings.share_mood && !settings.share_diary) {
@@ -31,6 +32,7 @@ async function syncData() {
         return;
     }
 
+    try { showToast("Step2: 获取用户ID..."); } catch(e) {}
     const userId = await getUserId();
     let syncedCount = 0;
     let errors = [];
@@ -42,8 +44,10 @@ async function syncData() {
     try {
         // 1. 同步情绪记录
         if (settings.share_mood) {
+            try { showToast("Step3: 读取未同步情绪..."); } catch(e) {}
             const unsynced = await getAllUnsyncedMoods();
             console.log("[sync] unsynced moods:", unsynced.length);
+            try { showToast(`Step3完成: ${unsynced.length}条情绪`); } catch(e) {}
             for (const entry of unsynced) {
                 try {
                     const url = `${API_BASE}/mood`;
@@ -77,6 +81,7 @@ async function syncData() {
 
         // 2. 同步症状记录
         if (settings.share_mood) {
+            try { showToast("Step4: 读取未同步症状..."); } catch(e) {}
             const unsyncedSymptoms = await getAllUnsyncedSymptoms();
             console.log("[sync] unsynced symptoms:", unsyncedSymptoms.length);
             for (const entry of unsyncedSymptoms) {
@@ -107,6 +112,7 @@ async function syncData() {
 
         // 3. 同步日记
         if (settings.share_diary) {
+            try { showToast("Step5: 读取未同步日记..."); } catch(e) {}
             const unsyncedDiaries = await getAllUnsyncedDiaries();
             console.log("[sync] unsynced diaries:", unsyncedDiaries.length);
             for (const entry of unsyncedDiaries) {
