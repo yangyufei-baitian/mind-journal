@@ -405,6 +405,7 @@ async function addUserMedication(med) {
         total_pills: med.total_pills || 28,
         start_date: med.start_date || new Date().toISOString().split("T")[0],
         notes: med.notes || "",
+        synced: false,
         created_at: new Date().toISOString()
     });
 }
@@ -414,7 +415,7 @@ async function getUserMedications() {
 }
 
 async function updateUserMedication(id, updates) {
-    return await db.userMedications.update(id, { ...updates, updated_at: new Date().toISOString() });
+    return await db.userMedications.update(id, { ...updates, synced: false, updated_at: new Date().toISOString() });
 }
 
 async function removeUserMedication(id) {
@@ -451,10 +452,13 @@ async function toggleMedicationCheck(userMedId, date, period) {
         await db.medicationLog.delete(existing.id);
         return false; // 取消打卡
     }
+    const um = await db.userMedications.get(userMedId);
     await db.medicationLog.add({
         user_med_id: userMedId,
+        med_id: um ? um.med_id : "",
         date: date,
         period: period,
+        synced: false,
         taken_at: new Date().toISOString()
     });
     return true; // 打卡成功
@@ -490,6 +494,29 @@ function calculatePillRemaining(userMed) {
 // 获取药品预设信息
 function getMedicationInfo(medId) {
     return MEDICATION_DB.find(m => m.id === medId) || null;
+}
+
+// 同步辅助：未同步的药品配置
+async function getAllUnsyncedMedicationConfigs() {
+    const all = await db.userMedications.toArray();
+    return all.filter(m => !m.synced);
+}
+
+// 同步辅助：标记药品配置已同步
+async function markMedicationConfigSynced(id, medId) {
+    // 更新本地记录，存储 med_id 用于后续打卡同步
+    return await db.userMedications.update(id, { synced: true });
+}
+
+// 同步辅助：未同步的打卡记录
+async function getAllUnsyncedMedicationLogs() {
+    const all = await db.medicationLog.toArray();
+    return all.filter(l => !l.synced);
+}
+
+// 同步辅助：标记打卡记录已同步
+async function markMedicationLogSynced(id) {
+    return await db.medicationLog.update(id, { synced: true });
 }
 
 async function getPillsTakenSoFar(userMedId) {

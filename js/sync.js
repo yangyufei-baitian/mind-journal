@@ -117,6 +117,67 @@ async function syncData() {
         }
     }
 
+    // 4. 同步药品配置
+    if (settings.share_mood) {
+        const unsyncedConfigs = await getAllUnsyncedMedicationConfigs();
+        for (const entry of unsyncedConfigs) {
+            try {
+                const resp = await fetch(`${API_BASE}/medication/config`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        anonymous_id: userId,
+                        med_id: entry.med_id,
+                        custom_dose: entry.custom_dose || 0,
+                        dose_unit: entry.dose_unit || "mg",
+                        pills_per_dose: entry.pills_per_dose || 1,
+                        frequency: entry.frequency || {},
+                        total_pills: entry.total_pills || 28,
+                        start_date: entry.start_date || "",
+                        notes: entry.notes || ""
+                    })
+                });
+                if (resp.ok) {
+                    await markMedicationConfigSynced(entry.id);
+                    syncedCount++;
+                } else {
+                    const err = await resp.json();
+                    errors.push("药品配置:" + (err.detail || resp.status));
+                }
+            } catch (e) {
+                errors.push("药品配置POST:" + (e.message || "网络错误"));
+            }
+        }
+    }
+
+    // 5. 同步服药打卡记录
+    if (settings.share_mood) {
+        const unsyncedLogs = await getAllUnsyncedMedicationLogs();
+        for (const entry of unsyncedLogs) {
+            try {
+                const resp = await fetch(`${API_BASE}/medication/log`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        anonymous_id: userId,
+                        med_id: entry.med_id,
+                        date: entry.date,
+                        period: entry.period
+                    })
+                });
+                if (resp.ok) {
+                    await markMedicationLogSynced(entry.id);
+                    syncedCount++;
+                } else {
+                    const err = await resp.json();
+                    errors.push("服药打卡:" + (err.detail || resp.status));
+                }
+            } catch (e) {
+                errors.push("服药打卡POST:" + (e.message || "网络错误"));
+            }
+        }
+    }
+
     // 结果反馈
     if (syncedCount > 0) {
         showToast("已同步 " + syncedCount + " 条记录");
