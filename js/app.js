@@ -41,7 +41,7 @@ function switchPage(pageName) {
     document.getElementById("page-title").textContent = pageTitles[pageName] || pageName;
 
     try {
-        if (pageName === "stats") { buildSingleSymptomSelector(); loadCharts(); }
+        if (pageName === "stats") { buildSingleSymptomSelector(); loadCharts(); renderScaleCards(); }
         else if (pageName === "music") { loadMusicList(); }
         else if (pageName === "settings") { loadContactList(); loadConsentSettings(); }
         else if (pageName === "record") { updateTodaySummary(); loadWeeklySummary(); renderMedicationCheckins(); }
@@ -62,6 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try { buildAmbientSounds(); } catch(e) { console.warn("ambient:", e); }
     try { buildAccountUI(); } catch(e) { console.warn("account:", e); }
     try { renderMedicationCheckins(); } catch(e) { console.warn("medication:", e); }
+    try { renderScaleCards(); } catch(e) { console.warn("scales:", e); }
 
     // 弹窗点击外部关闭
     document.getElementById("med-manager-overlay")?.addEventListener("click", function(e) {

@@ -41,6 +41,11 @@ db.version(3).stores({
     medicationLog: "++id, [user_med_id+date+period], user_med_id, date, period"
 });
 
+// v4: 临床量表评估
+db.version(4).stores({
+    scaleEntries: "++id, scale_type, date, [scale_type+date]"
+});
+
 // ==================== 用户信息 ====================
 
 async function getUserId() {

@@ -185,11 +185,23 @@ async function collectReportData(days) {
 
     const userId = await getUserId();
 
+    // --- 量表数据 ---
+    // collectScaleDataForReport 在 scales.js 中定义
+    let scaleData = { phq9: null, gad7: null, cssrs: null, dshi: null };
+    try {
+        scaleData = await collectScaleDataForReport(days);
+    } catch (e) {
+        console.warn("Scale data collection failed:", e);
+    }
+    const hasScaleData = scaleData.phq9?.hasData || scaleData.gad7?.hasData ||
+                         scaleData.cssrs?.hasData || scaleData.dshi?.hasData;
+
     return {
         dateStart, dateEnd, days, userId, labels, dateList,
         moodScores, avgMood, maxMood, maxMoodDate, minMood, minMoodDate,
         symScores, symRanking, topSymptomTrends,
         medDetails,
+        scaleData, hasScaleData,
         hasMood: moodVals.length > 0,
         hasSym: symRanking.length > 0,
         hasMed: medDetails.length > 0
@@ -356,6 +368,50 @@ ${data.hasMood ? `
     <div class="stat-card"><div class="val">${data.moodScores.filter(s=>s!=null).length}/${data.days}</div><div class="lbl">记录天数</div></div>
   </div>
   <div class="chart-wrap"><canvas id="chart-mood"></canvas></div>
+</div>` : ""}
+
+<!-- ===== 4. 临床量表 ===== -->
+${data.hasScaleData ? `
+<div class="r-section">
+  <h2>📋 标准化临床量表</h2>
+  <p style="font-size:9px;color:#636e72;margin-bottom:6px;">基于已验证的中文版量表（PHQ-9 / GAD-7 / C-SSRS / DSHI），供医生参考</p>
+  <table>
+    <thead><tr><th>量表</th><th>最近评估日期</th><th>总分</th><th>严重度分级</th><th>与基线比较</th></tr></thead>
+    <tbody>
+      ${[
+        { key: "phq9", name: "PHQ-9 抑郁筛查", scale: SCALES.phq9 },
+        { key: "gad7", name: "GAD-7 焦虑筛查", scale: SCALES.gad7 },
+        { key: "cssrs", name: "C-SSRS 自杀风险评估", scale: SCALES.cssrs },
+        { key: "dshi", name: "自伤行为筛查", scale: SCALES.dshi }
+      ].map(s => {
+        const sd = data.scaleData[s.key];
+        if (!sd || !sd.latest) return `<tr><td style="text-align:left;">${s.name}</td><td colspan="4" style="color:#b2bec3;">未评估</td></tr>`;
+        const sev = getSeverity(s.key, sd.latest.total_score, sd.latest.answers);
+        let trendStr = "—";
+        if (sd.trend !== null && sd.trend > 0) trendStr = `<span style="color:#c0392b;">↑恶化 ${sd.trend}分</span>`;
+        else if (sd.trend !== null && sd.trend < 0) trendStr = `<span style="color:#27ae60;">↓改善 ${Math.abs(sd.trend)}分</span>`;
+        else if (sd.trend === 0) trendStr = `<span style="color:#636e72;">→ 持平</span>`;
+        return `<tr>
+          <td style="text-align:left;font-weight:600;">${s.name}</td>
+          <td>${sd.latest.date.slice(5)}</td>
+          <td style="font-weight:700;color:${sev.color};">${sd.latest.total_score}</td>
+          <td style="color:${sev.color};">${sev.emoji} ${sev.label}</td>
+          <td>${trendStr}</td>
+        </tr>`;
+      }).join("")}
+    </tbody>
+  </table>
+  ${data.scaleData.phq9?.latest?.answers[8] >= 2 ? `
+  <div style="margin-top:8px;padding:8px 12px;background:#FFEBEE;border-radius:6px;border:1px solid #E76F6F;">
+    <p style="font-size:10px;color:#C0392B;margin:0;"><b>⚠️ PHQ-9 第9题阳性</b>：患者报告了自杀意念，建议进一步评估自杀风险。</p>
+  </div>` : ""}
+  ${data.scaleData.cssrs?.latest?.total_score >= 2 ? `
+  <div style="margin-top:8px;padding:8px 12px;background:#FFEBEE;border-radius:6px;border:2px solid #C0392B;">
+    <p style="font-size:10px;color:#C0392B;margin:0;"><b>🚨 C-SSRS 高风险</b>：患者报告了自杀方法/计划/行为。请立即进行临床风险评估。</p>
+  </div>` : data.scaleData.cssrs?.latest?.total_score >= 1 ? `
+  <div style="margin-top:8px;padding:8px 12px;background:#FFF3E0;border-radius:6px;border:1px solid #F4A261;">
+    <p style="font-size:10px;color:#E67E22;margin:0;"><b>⚠️ C-SSRS 中风险</b>：患者报告了自杀意念。建议在诊疗中进行自杀风险评估。</p>
+  </div>` : ""}
 </div>` : ""}
 
 <!-- ===== FOOTER ===== -->
