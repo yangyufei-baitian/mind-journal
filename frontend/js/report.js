@@ -71,20 +71,13 @@ async function generateReport(days) {
     if (btn) { btn.disabled = true; btn.textContent = "⏳ 正在生成..."; }
 
     try {
-        // 检查 html2pdf 是否加载
-        if (typeof html2pdf === "undefined") {
-            showToast("html2pdf 库未加载，请检查网络后刷新页面");
-            if (btn) { btn.disabled = false; btn.textContent = "📄 生成报告"; }
-            return;
-        }
-
         // 1. 收集数据
         const data = await collectReportData(days);
 
         // 2. 关闭弹窗
         closeReportDialog();
 
-        // 3. 构建报告，直接放 body (不要嵌套flex — html2canvas 算宽度会出问题)
+        // 3. 构建报告 HTML，直接放 body 下
         const reportHTML = buildReportHTML(data, days);
 
         const container = document.createElement("div");
@@ -99,7 +92,7 @@ async function generateReport(days) {
         // 5. 等待渲染完成
         await new Promise(r => setTimeout(r, 400));
 
-        // 6. canvas → img (html2canvas 对 img 更可靠)
+        // 6. canvas → img (打印时更可靠)
         const canvases = container.querySelectorAll("canvas");
         for (const canvas of canvases) {
             try {
@@ -115,24 +108,23 @@ async function generateReport(days) {
             }
         }
 
-        // 7. 等待图片加载
-        await new Promise(r => setTimeout(r, 300));
+        // 7. 打开新窗口 → 浏览器原生打印 → 另存为 PDF
+        const printWin = window.open("", "_blank", "width=800,height=600");
+        if (!printWin) {
+            showToast("弹窗被拦截，请允许本站弹窗后重试");
+            document.body.removeChild(container);
+            if (btn) { btn.disabled = false; btn.textContent = "📄 生成报告"; }
+            return;
+        }
+        printWin.document.write(reportHTML);
+        printWin.document.close();
+        printWin.focus();
 
-        // 8. 生成 PDF — 直接用容器元素
-        const opt = {
-            margin: [6, 6, 6, 6],
-            filename: `心灵日记_健康报告_${data.dateStart}_${data.dateEnd}.pdf`,
-            image: { type: "jpeg", quality: 0.95 },
-            html2canvas: { scale: 2, useCORS: true, logging: false, allowTaint: true },
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-            pagebreak: { mode: ["css", "legacy"] }
-        };
+        // 等待渲染后触发打印
+        setTimeout(() => { printWin.print(); }, 600);
+        setTimeout(() => { document.body.removeChild(container); }, 800);
 
-        await html2pdf().set(opt).from(container).save();
-
-        // 9. 清理
-        document.body.removeChild(container);
-        showToast("报告已生成 ✅");
+        showToast("请在打印对话框中选择「另存为 PDF」💾");
 
     } catch (e) {
         console.error("Report generation failed:", e);
@@ -283,9 +275,11 @@ function buildReportHTML(data, days) {
     const e = ["", "😢", "😢", "😞", "😞", "😐", "😐", "🙂", "🙂", "😄", "😄"];
 
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+        @page { size: A4; margin: 8mm; }
+        @media print { body { background: #fff !important; } }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; color: #2d3436; font-size: 12px; line-height: 1.6; }
-        .report { width: 720px; padding: 24px 28px; }
+        .report { max-width: 720px; margin: 0 auto; padding: 24px 28px; }
 
         /* 页眉 */
         .r-header { text-align: center; padding-bottom: 16px; border-bottom: 3px solid #5B8C5A; margin-bottom: 16px; }
