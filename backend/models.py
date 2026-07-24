@@ -22,6 +22,8 @@ class User(Base):
     symptom_records = relationship("SymptomRecord", back_populates="user")
     diary_records = relationship("DiaryRecord", back_populates="user")
     consent_logs = relationship("ConsentLog", back_populates="user")
+    medications = relationship("UserMedication", back_populates="user")
+    medication_logs = relationship("MedicationLogRecord", back_populates="user")
 
 
 class MoodRecord(Base):
@@ -90,3 +92,38 @@ class Researcher(Base):
     password_hash = Column(String(200), nullable=False)
     institution = Column(String(200), default="")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# ==================== v0.6: 服药管理 ====================
+
+class UserMedication(Base):
+    """用户药品配置"""
+    __tablename__ = "user_medications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    med_id = Column(String(50), nullable=False)         # 对应前端 medication-db.js 的 drug id
+    custom_dose = Column(Float, default=0)
+    dose_unit = Column(String(10), default="mg")
+    pills_per_dose = Column(Float, default=1)
+    frequency = Column(JSON, default={})                # {morning: bool, noon: bool, ...}
+    total_pills = Column(Integer, default=28)
+    start_date = Column(String(10))
+    notes = Column(Text, default="")
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="medications")
+
+
+class MedicationLogRecord(Base):
+    """服药打卡记录"""
+    __tablename__ = "medication_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    med_id = Column(String(50), nullable=False)          # 对应 medication-db.js 的 drug id
+    date = Column(String(10), nullable=False)
+    period = Column(String(10), nullable=False)           # morning/noon/evening/bedtime
+    taken_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="medication_logs")

@@ -6,11 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
-from models import User, MoodRecord, SymptomRecord, DiaryRecord, ConsentLog
+from models import User, MoodRecord, SymptomRecord, DiaryRecord, ConsentLog, UserMedication, MedicationLogRecord
 from schemas import (
     MoodRecordCreate, MoodRecordResponse,
     SymptomRecordCreate, SymptomRecordResponse,
     DiaryRecordCreate, DiaryRecordResponse,
+    MedicationConfigCreate, MedicationConfigResponse,
+    MedicationLogCreate, MedicationLogResponse,
     MessageResponse
 )
 
@@ -141,6 +143,111 @@ def get_diary_records(
     return records
 
 
+# ==================== v0.6: 服药管理 ====================
+
+@router.post("/medication/config", response_model=MessageResponse)
+def upload_medication_config(data: MedicationConfigCreate, db: Session = Depends(get_db)):
+    """上传/更新药品配置（同一 med_id 会更新）"""
+    user = get_user_by_anonymous_id(db, data.anonymous_id)
+
+    existing = db.query(UserMedication).filter(
+        UserMedication.user_id == user.id,
+        UserMedication.med_id == data.med_id
+    ).first()
+
+    if existing:
+        existing.custom_dose = data.custom_dose
+        existing.dose_unit = data.dose_unit
+        existing.pills_per_dose = data.pills_per_dose
+        existing.frequency = data.frequency
+        existing.total_pills = data.total_pills
+        existing.start_date = data.start_date
+        existing.notes = data.notes
+        db.commit()
+        return MessageResponse(message="药品配置已更新", detail=data.med_id)
+
+    record = UserMedication(
+        user_id=user.id,
+        med_id=data.med_id,
+        custom_dose=data.custom_dose,
+        dose_unit=data.dose_unit,
+        pills_per_dose=data.pills_per_dose,
+        frequency=data.frequency,
+        total_pills=data.total_pills,
+        start_date=data.start_date,
+        notes=data.notes
+    )
+    db.add(record)
+    db.commit()
+    return MessageResponse(message="药品配置已上传", detail=data.med_id)
+
+
+@router.get("/medication/config/{anonymous_id}", response_model=List[MedicationConfigResponse])
+def get_medication_configs(anonymous_id: str, db: Session = Depends(get_db)):
+    """获取用户所有药品配置"""
+    user = get_user_by_anonymous_id(db, anonymous_id)
+    records = db.query(UserMedication).filter(
+        UserMedication.user_id == user.id
+    ).all()
+    return records
+
+
+@router.delete("/medication/config/{anonymous_id}/{med_id}", response_model=MessageResponse)
+def delete_medication_config(anonymous_id: str, med_id: str, db: Session = Depends(get_db)):
+    """删除药品配置及关联的打卡记录"""
+    user = get_user_by_anonymous_id(db, anonymous_id)
+    db.query(UserMedication).filter(
+        UserMedication.user_id == user.id,
+        UserMedication.med_id == med_id
+    ).delete()
+    db.query(MedicationLogRecord).filter(
+        MedicationLogRecord.user_id == user.id,
+        MedicationLogRecord.med_id == med_id
+    ).delete()
+    db.commit()
+    return MessageResponse(message="已删除", detail=med_id)
+
+
+@router.post("/medication/log", response_model=MessageResponse)
+def upload_medication_log(data: MedicationLogCreate, db: Session = Depends(get_db)):
+    """上传服药打卡记录（同一 med_id+date+period 去重）"""
+    user = get_user_by_anonymous_id(db, data.anonymous_id)
+
+    existing = db.query(MedicationLogRecord).filter(
+        MedicationLogRecord.user_id == user.id,
+        MedicationLogRecord.med_id == data.med_id,
+        MedicationLogRecord.date == data.date,
+        MedicationLogRecord.period == data.period
+    ).first()
+
+    if existing:
+        return MessageResponse(message="已存在", detail=f"{data.med_id} {data.date} {data.period}")
+
+    record = MedicationLogRecord(
+        user_id=user.id,
+        med_id=data.med_id,
+        date=data.date,
+        period=data.period
+    )
+    db.add(record)
+    db.commit()
+    return MessageResponse(message="打卡已上传", detail=f"{data.med_id} {data.date} {data.period}")
+
+
+@router.get("/medication/log/{anonymous_id}", response_model=List[MedicationLogResponse])
+def get_medication_logs(
+    anonymous_id: str,
+    days: int = Query(default=90, ge=1, le=365),
+    db: Session = Depends(get_db)
+):
+    """获取用户服药打卡记录"""
+    user = get_user_by_anonymous_id(db, anonymous_id)
+    records = db.query(MedicationLogRecord).filter(
+        MedicationLogRecord.user_id == user.id
+    ).order_by(MedicationLogRecord.date.desc()).limit(days * 10).all()
+    return records
+
+
 # ==================== 研究员数据查询 ====================
 
 @router.get("/research/moods", response_model=List[MoodRecordResponse])
@@ -216,5 +323,49 @@ def research_get_stats(db: Session = Depends(get_db)):
         "consented_diary_users": consented_diary_users,
         "total_mood_records": db.query(MoodRecord).count(),
         "total_symptom_records": db.query(SymptomRecord).count(),
-        "total_diary_records": db.query(DiaryRecord).count()
+        "total_diary_records": db.query(DiaryRecord).count(),
+        "total_medication_configs": db.query(UserMedication).count(),
+        "total_medication_logs": db.query(MedicationLogRecord).count()
     }
+
+
+# ==================== v0.6: 研究员 — 服药数据 ====================
+
+@router.get("/research/medication/configs", response_model=List[MedicationConfigResponse])
+def research_get_medication_configs(
+    db: Session = Depends(get_db),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=1000)
+):
+    """研究员查询所有已授权的药品配置"""
+    consented_users = db.query(ConsentLog.user_id).filter(
+        ConsentLog.share_mood == True, ConsentLog.status == "active"
+    ).distinct().all()
+    consented_user_ids = [u[0] for u in consented_users]
+    if not consented_user_ids:
+        return []
+
+    records = db.query(UserMedication).filter(
+        UserMedication.user_id.in_(consented_user_ids)
+    ).order_by(UserMedication.user_id).offset(skip).limit(limit).all()
+    return records
+
+
+@router.get("/research/medication/logs", response_model=List[MedicationLogResponse])
+def research_get_medication_logs(
+    db: Session = Depends(get_db),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=1000)
+):
+    """研究员查询所有已授权的服药打卡记录"""
+    consented_users = db.query(ConsentLog.user_id).filter(
+        ConsentLog.share_mood == True, ConsentLog.status == "active"
+    ).distinct().all()
+    consented_user_ids = [u[0] for u in consented_users]
+    if not consented_user_ids:
+        return []
+
+    records = db.query(MedicationLogRecord).filter(
+        MedicationLogRecord.user_id.in_(consented_user_ids)
+    ).order_by(MedicationLogRecord.date.desc()).offset(skip).limit(limit).all()
+    return records

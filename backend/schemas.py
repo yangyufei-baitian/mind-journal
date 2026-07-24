@@ -122,6 +122,49 @@ class ResearcherLogin(BaseModel):
     username: str
     password: str
 
+# ==================== v0.6: 服药管理 ====================
+
+class MedicationConfigCreate(BaseModel):
+    anonymous_id: str
+    med_id: str
+    custom_dose: float = 0
+    dose_unit: str = "mg"
+    pills_per_dose: float = 1
+    frequency: dict = {}
+    total_pills: int = 28
+    start_date: str = ""
+    notes: str = ""
+
+class MedicationConfigResponse(BaseModel):
+    id: int
+    user_id: int
+    med_id: str
+    custom_dose: float
+    dose_unit: str
+    pills_per_dose: float
+    frequency: dict
+    total_pills: int
+    start_date: str
+    notes: str
+    uploaded_at: datetime
+    class Config: from_attributes = True
+
+class MedicationLogCreate(BaseModel):
+    anonymous_id: str
+    med_id: str
+    date: str
+    period: str
+
+class MedicationLogResponse(BaseModel):
+    id: int
+    user_id: int
+    med_id: str
+    date: str
+    period: str
+    taken_at: datetime
+    class Config: from_attributes = True
+
+
 class MessageResponse(BaseModel):
     message: str
     detail: Optional[str] = None
