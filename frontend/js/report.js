@@ -81,21 +81,31 @@ async function generateReport(days) {
         // 1. 收集数据
         const data = await collectReportData(days);
 
-        // 2. 构建报告 HTML (含 chart canvas)
+        // 2. 关闭弹窗
+        closeReportDialog();
+
+        // 3. 构建报告 HTML + 显示为全屏预览 (必须在可见区域 html2canvas 才能捕获)
         const reportHTML = buildReportHTML(data, days);
 
-        // 3. 渲染到 off-screen 容器
-        const container = document.createElement("div");
-        container.id = "__report_temp";
-        container.style.cssText = "position:absolute;left:-9999px;top:0;width:750px;";
-        container.innerHTML = reportHTML;
-        document.body.appendChild(container);
+        const overlay = document.createElement("div");
+        overlay.id = "__report_overlay";
+        overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:#fff;overflow-y:auto;";
+        overlay.innerHTML = `
+            <div style="background:#5B8C5A;color:#fff;text-align:center;padding:10px;font-size:14px;position:sticky;top:0;z-index:10;">
+                ⏳ 正在生成 PDF，请稍候...
+            </div>
+            <div style="display:flex;justify-content:center;"><div id="__report_container" style="width:750px;padding:8px;"></div></div>
+        `;
+        document.body.appendChild(overlay);
 
-        // 4. 渲染图表到临时 canvas
+        const container = overlay.querySelector("#__report_container");
+        container.innerHTML = reportHTML;
+
+        // 4. 渲染图表到 canvas (必须在可见 DOM 中)
         await renderReportCharts(container, data, days);
 
-        // 5. 等待两帧确保渲染完成
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        // 5. 等待渲染完成
+        await new Promise(r => setTimeout(r, 300));
 
         // 6. 生成 PDF
         const opt = {
@@ -119,14 +129,12 @@ async function generateReport(days) {
         await html2pdf().set(opt).from(container).save();
 
         // 7. 清理
-        document.body.removeChild(container);
-        closeReportDialog();
+        document.body.removeChild(overlay);
         showToast("报告已生成 ✅");
 
     } catch (e) {
         console.error("Report generation failed:", e);
-        // 清理临时容器
-        const temp = document.getElementById("__report_temp");
+        const temp = document.getElementById("__report_overlay");
         if (temp) temp.remove();
         showToast("报告生成失败: " + (e.message || "未知错误"));
     } finally {
