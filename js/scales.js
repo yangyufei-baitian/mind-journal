@@ -1,7 +1,8 @@
 /* ============================================
-   scales.js — 临床量表评估模块 v2.0
+   scales.js — 临床量表评估模块 v2.1
    PHQ-9 | GAD-7 | C-SSRS | DSHI-s | SCL-90
    2026-07-24: +SCL-90(90题/10因子), +选做/必做分离, +云端同步, +趋势图
+   2026-07-24 v2.1: +文献引用(中国常模/信效度), DSHI-s max修正, SCL-90解读优化
    ============================================ */
 
 // ==================== 量表定义 ====================
@@ -9,7 +10,8 @@
 const SCALES = {
   // ---------- PHQ-9 抑郁症筛查 ----------
   // Kroenke K, Spitzer RL, Williams JBW (2001) J Gen Intern Med
-  // 中文版信效度: 卞崔冬等 (2009) 上海精神医学
+  // 截断值≥10: 敏感性88%, 特异性88%
+  // 中文版: 卞崔冬等 (2009) 上海精神医学, 综合医院信效度良好
   phq9: {
     id: "phq9",
     name: "PHQ-9 抑郁症筛查",
@@ -48,6 +50,8 @@ const SCALES = {
   },
 
   // ---------- GAD-7 焦虑症筛查 ----------
+  // Spitzer RL, Kroenke K, Williams JBW (2006) Arch Intern Med
+  // 截断值≥10: 敏感性89%, 特异性82%
   gad7: {
     id: "gad7",
     name: "GAD-7 焦虑症筛查",
@@ -83,6 +87,8 @@ const SCALES = {
   },
 
   // ---------- C-SSRS 哥伦比亚自杀严重度评定量表 (筛查版) ----------
+  // Posner K et al. (2011) Am J Psychiatry
+  // 中文版: Ji Y et al. (2023) J Affect Disord, N=456, α=0.884, RMSEA=0.092
   cssrs: {
     id: "cssrs",
     name: "C-SSRS 自杀风险评估",
@@ -122,6 +128,8 @@ const SCALES = {
   },
 
   // ---------- DSHI-s 自伤行为筛查 ----------
+  // Gratz KL (2001) J Psychopathol Behav Assess, α=0.82, 重测r=0.91
+  // 9题, 0-2评分, 总分0-18
   dshi: {
     id: "dshi",
     name: "自伤行为筛查",
@@ -148,9 +156,9 @@ const SCALES = {
     ],
     severity: [
       { min: 0, max: 0, label: "无自伤行为", color: "#27ae60", emoji: "🟢" },
-      { min: 1, max: 3, label: "轻度：1-3种方式", color: "#F4A261", emoji: "🟡" },
-      { min: 4, max: 8, label: "中度：4-8种方式", color: "#E76F6F", emoji: "🟠" },
-      { min: 9, max: 27, label: "重度：≥9种方式", color: "#C0392B", emoji: "🔴" }
+      { min: 1, max: 3, label: "轻度 (总分1-3)", color: "#F4A261", emoji: "🟡" },
+      { min: 4, max: 8, label: "中度 (总分4-8)", color: "#E76F6F", emoji: "🟠" },
+      { min: 9, max: 18, label: "重度 (总分≥9)", color: "#C0392B", emoji: "🔴" }
     ],
     flagItems: [],
     flagThreshold: 0,
@@ -159,6 +167,9 @@ const SCALES = {
 
   // ---------- SCL-90 症状自评量表 (选做) ----------
   // Derogatis LR (1977) SCL-90-R. 中文版: 王征宇 (1984) 上海精神医学
+  // 中国常模 (金华 1986, 1388名正常成人): GSI=1.44±0.43
+  // 筛查阳性标准: GSI≥1.5 或 任一因子分≥2.0
+  // 临床显著性: 任一因子分≥3.0
   // 90题, 10因子, 5级评分 (1-5)
   scl90: {
     id: "scl90",
@@ -816,11 +827,13 @@ function getScaleInterpretation(scaleId, score, severity) {
   }
 
   if (scaleId === "scl90") {
-    // score = total score (90-450)
-    if (score <= 135) return `<div class="scale-interp"><p>✅ GSI在正常范围内，整体心理健康状况良好。</p><p style="font-size:0.8rem;color:var(--text-light);margin-top:4px;">注：此为自评工具，不能替代专业诊断。如有疑虑请咨询医生。</p></div>`;
-    if (score <= 180) return `<div class="scale-interp"><p>🟡 轻度异常。某些因子分偏高，建议：</p><ul><li>关注因子分≥2的维度</li><li>保持定期自评，观察变化</li><li>如持续异常，建议就医咨询</li></ul></div>`;
-    if (score <= 225) return `<div class="scale-interp"><p>🟠 中度异常。多个维度存在问题，建议：</p><ul><li>预约精神科或心理科评估</li><li>重点关注因子分≥2.5的维度</li><li>阳性项目数较多提示症状广泛</li></ul></div>`;
-    return `<div class="scale-interp"><p>🔴 明显异常。强烈建议：</p><ul><li>尽快就医进行全面评估</li><li>携带本次评估结果供医生参考</li><li>如有自杀意念请立即寻求帮助：<b>400-161-9995</b></li></ul></div>`;
+    // score = total score (90-450), GSI = score/90
+    // 中国常模 (金华 1986, N=1388): GSI=1.44±0.43
+    // 筛查阳性阈值: GSI≥1.5; 因子阳性阈值: 均分≥2.0; 临床显著: ≥3.0
+    if (score <= 135) return `<div class="scale-interp"><p>✅ GSI ${(score/90).toFixed(2)}，在中国常模范围内(GSI=1.44±0.43, 金华1986)。整体心理健康状况良好。</p><p style="font-size:0.8rem;color:var(--text-light);margin-top:4px;">注：此结果为自评筛查工具，不能替代专业临床诊断。如有疑虑请咨询精神科医生。</p></div>`;
+    if (score <= 180) return `<div class="scale-interp"><p>🟡 轻度异常(GSI ${(score/90).toFixed(2)})，超过中国常模+1SD。建议：</p><ul><li>关注因子分≥2.0的维度（已过筛查阳性线）</li><li>保持每1-2周定期自评，观察趋势变化</li><li>如持续2周以上未改善，建议就医咨询</li></ul></div>`;
+    if (score <= 225) return `<div class="scale-interp"><p>🟠 中度异常(GSI ${(score/90).toFixed(2)})。多个维度可能超出正常范围。建议：</p><ul><li>预约精神科或临床心理科进行系统评估</li><li>重点关注因子分≥2.5的维度</li><li>阳性项目数(PST)偏高提示症状广度大</li><li>PSDI偏高提示主观痛苦程度高</li></ul></div>`;
+    return `<div class="scale-interp"><p>🔴 重度异常(GSI ${(score/90).toFixed(2)})，远超中国常模。强烈建议：</p><ul><li>尽快就医进行全面临床评估</li><li>携带本次评估结果供医生参考</li><li>如有自杀意念(Q15)请立即求助：<b>400-161-9995</b></li><li>如已在治疗中，建议与主治医生讨论治疗调整</li></ul></div>`;
   }
 
   return "";
