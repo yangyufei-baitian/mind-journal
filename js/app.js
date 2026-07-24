@@ -653,6 +653,8 @@ async function handleRegister() {
         const data = await resp.json();
         localStorage.setItem("mj_auth_token", data.token);
         localStorage.setItem("mj_username", data.username);
+        // 同步服务器分配的 anonymous_id，确保后续 sync 能匹配
+        if (data.anonymous_id) await setUserId(data.anonymous_id);
         showToast("注册成功! 数据将自动同步");
         buildAccountUI();
     } catch (e) {
@@ -686,6 +688,8 @@ async function handleLogin() {
         const data = await resp.json();
         localStorage.setItem("mj_auth_token", data.token);
         localStorage.setItem("mj_username", data.username);
+        // 同步服务器 anonymous_id，后续 sync 才能匹配
+        if (data.anonymous_id) await setUserId(data.anonymous_id);
         showToast("登录成功! 欢迎回来");
         buildAccountUI();
     } catch (e) {
