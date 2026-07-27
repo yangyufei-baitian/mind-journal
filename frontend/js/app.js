@@ -120,6 +120,11 @@ document.addEventListener("DOMContentLoaded", () => {
     getUserId().then(id => console.log("[MindJournal v0.4] User:", id));
     updateTodaySummary();
     loadWeeklySummary();
+
+    // 首次访问 → 显示引导页
+    if (checkOnboarding()) {
+        setTimeout(() => showOnboarding(), 600);
+    }
 });
 
 // ==================== 时段选择器 (v0.4: 标记已记录时段) ====================

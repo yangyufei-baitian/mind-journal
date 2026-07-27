@@ -781,3 +781,120 @@ body {
 .report-period-btn .period-desc { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
 .report-period-btn.active .period-num { color: var(--primary); }
 .report-period-btn.active .period-desc { color: var(--primary); }
+
+/* ==================== 新用户引导页 ==================== */
+
+.onboarding-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;
+    background: var(--bg);
+    display: flex; justify-content: center; align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+.onboarding-overlay.fade-out { opacity: 0; transition: opacity 0.3s ease; }
+
+.ob-container {
+    width: 100%; max-width: 420px; height: 100vh; max-height: 750px;
+    display: flex; flex-direction: column;
+    padding: 48px 24px 32px;
+    position: relative;
+}
+
+.ob-btn-skip {
+    position: absolute; top: 16px; right: 20px;
+    background: none; border: none; color: var(--text-muted);
+    font-size: 0.9rem; cursor: pointer; padding: 8px 12px;
+    z-index: 10;
+}
+.ob-btn-skip:active { color: var(--text); }
+
+/* slides */
+.ob-slides-wrapper {
+    flex: 1; overflow: hidden; position: relative;
+    display: flex; align-items: center;
+}
+.ob-slides-track {
+    display: flex; transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    width: 100%; height: 100%; align-items: center;
+}
+.ob-slide {
+    min-width: 100%; max-width: 100%;
+    text-align: center;
+    padding: 20px 8px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: flex-start;
+}
+
+.ob-icon {
+    font-size: 3.5rem; margin-bottom: 20px;
+    animation: obPopIn 0.5s ease;
+}
+@keyframes obPopIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+.ob-title {
+    font-size: 1.4rem; font-weight: 700; color: var(--text);
+    margin: 0 0 10px 0;
+}
+.ob-desc {
+    font-size: 0.9rem; color: var(--text-light);
+    line-height: 1.6; margin: 0 0 20px 0;
+}
+.ob-bullets {
+    list-style: none; padding: 0; margin: 0 0 16px 0;
+    text-align: left; width: 100%;
+}
+.ob-bullets li {
+    font-size: 0.88rem; color: var(--text);
+    line-height: 1.7; padding: 8px 12px; margin-bottom: 6px;
+    background: var(--card-bg);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+.ob-note {
+    font-size: 0.82rem; color: var(--text-muted);
+    margin: 8px 0 0 0; line-height: 1.5;
+}
+
+/* dots */
+.ob-dots {
+    display: flex; justify-content: center; gap: 10px;
+    padding: 20px 0;
+}
+.ob-dot {
+    width: 8px; height: 8px; border-radius: 4px;
+    background: var(--border);
+    transition: all 0.3s ease;
+}
+.ob-dot.active {
+    width: 24px; background: var(--primary);
+}
+
+/* buttons */
+.ob-actions {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding-top: 8px;
+}
+.ob-btn {
+    font-size: 0.95rem; padding: 14px 24px; border-radius: 12px;
+    cursor: pointer; font-weight: 600; border: none;
+    transition: all 0.15s;
+}
+.ob-btn:active { transform: scale(0.97); }
+.ob-btn-prev {
+    background: none; color: var(--text-muted);
+    font-size: 0.85rem; padding: 14px 12px;
+}
+.ob-btn-prev:active { color: var(--text); }
+.ob-btn-primary {
+    background: var(--primary); color: #fff;
+    flex: 1; text-align: center;
+    box-shadow: 0 4px 12px rgba(91,140,90,0.3);
+}
+.ob-btn-primary:active { background: var(--primary-dark); }
+.ob-btn-next-outline {
+    background: none; border: 2px solid var(--primary);
+    color: var(--primary); flex: 1; text-align: center;
+}
+.ob-btn-next-outline:active { background: #E8F5E9; }

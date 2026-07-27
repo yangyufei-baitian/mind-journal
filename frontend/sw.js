@@ -2,7 +2,7 @@
    sw.js — Service Worker (PWA 离线缓存)
    ============================================ */
 
-const CACHE_NAME = "mind-journal-v0.15";
+const CACHE_NAME = "mind-journal-v0.16";
 const STATIC_ASSETS = [
     "./",
     "./index.html",
@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
     "./js/report.js",
     "./js/scales.js",
     "./js/export-csv.js",
+    "./js/onboarding.js",
     "./js/app.js",
     "./js/charts.js",
     "./js/music.js",

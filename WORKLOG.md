@@ -92,8 +92,9 @@ Phase 1 [✅ 完成] → Phase 2 [✅ 进行中] → Phase 3 [待开始] → Pha
 
 ### 2.4 待做
 
-- [x] ~~P1: CSV 数据导出~~ → 已完成 (07-27, commit pending)
-- [ ] P2: 工具打磨 (引导页, 数据导入, mini-charts)
+- [x] ~~P1: CSV 数据导出~~ → 已完成 (07-27, commit d24c37e)
+- [x] ~~P2 引导页~~ → 已完成 (07-27, onboarding.js)
+- [ ] P2 剩余: JSON 数据导入, 统计页 mini-charts
 - [ ] P3: 工程清理 (移除 html2pdf CDN, 错误处理)
 
 ### 2.5 Tier 0 科研数据导出 (07-27)
@@ -105,6 +106,15 @@ Phase 1 [✅ 完成] → Phase 2 [✅ 进行中] → Phase 3 [待开始] → Pha
 | 07-27 | 📖 **数据字典**: DATA_DICTIONARY.md (中英文, SPSS/R/Python 导入示例, 全部公式+文献) | ✅ |
 | 07-27 | 🎨 **设置页 UI**: 一键导出按钮 + 4个单独CSV按钮 + PDF + JSON[旧版] | ✅ |
 | 07-27 | 🔢 SW bump v0.15 + HTML_VER v7-csv-export + JSZip CDN | ✅ |
+
+### 2.6 新用户引导页 (07-27)
+
+| 日期 | 内容 | 状态 |
+|------|------|:--:|
+| 07-27 | 🧠 **onboarding.js**: 4步滑动引导 (欢迎→时段→量表→隐私) | ✅ |
+| 07-27 | 🎨 引导页 CSS: 全屏覆盖、圆点指示器、触摸滑动、跳过/上一步/下一步 | ✅ |
+| 07-27 | 🔢 SW bump v0.16 + HTML_VER v8-onboarding + CSS v12 | ✅ |
+| 07-27 | 📱 localStorage "mj_onboarding_done" 标记, 首次访问自动触发 | ✅ |
 
 ---
 
