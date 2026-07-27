@@ -94,8 +94,9 @@ Phase 1 [✅ 完成] → Phase 2 [✅ 进行中] → Phase 3 [待开始] → Pha
 
 - [x] ~~P1: CSV 数据导出~~ → 已完成 (07-27, commit d24c37e)
 - [x] ~~P2 引导页~~ → 已完成 (07-27, onboarding.js)
-- [ ] P2 剩余: JSON 数据导入, 统计页 mini-charts
-- [ ] P3: 工程清理 (移除 html2pdf CDN, 错误处理)
+- [x] ~~P2 统计页 mini-charts~~ → 已完成 (07-27)
+- [x] ~~P3: 移除 CDN 依赖~~ → 已完成 (07-27, 4库本地化)
+- [ ] P3 剩余: 统一错误处理, JSON 数据导入 (已取消)
 
 ### 2.5 Tier 0 科研数据导出 (07-27)
 
@@ -137,6 +138,16 @@ Phase 1 [✅ 完成] → Phase 2 [✅ 进行中] → Phase 3 [待开始] → Pha
 | 07-27 | 📋 量表完成提醒: 核心4量表待完成/全部完成 | ✅ |
 | 07-27 | 🎨 2x2 网格布局 + 量表提醒行 | ✅ |
 | 07-27 | 🔢 SW v0.18 + HTML_VER v9-sparklines + CSS v13 | ✅ |
+
+### 2.9 移除 CDN 依赖 — 全离线化 (07-27)
+
+| 日期 | 内容 | 状态 |
+|------|------|:--:|
+| 07-27 | 📦 下载4个CDN库到本地: Chart.js (205KB) + Dexie (82KB) + html2pdf (906KB) + JSZip (98KB) | ✅ |
+| 07-27 | 📂 本地路径: `js/vendor/` — chart.umd.min.js, dexie.min.js, html2pdf.bundle.min.js, jszip.min.js | ✅ |
+| 07-27 | 🔗 index.html: 4个 CDN script 标签改为本地引用 | ✅ |
+| 07-27 | 🔢 SW v0.19: STATIC_ASSETS 移除 CDN URL，新增本地 vendor 路径 | ✅ |
+| 07-27 | 🔢 HTML_VER v10-local-deps + CSS v15 + app.js v13 | ✅ |
 
 ---
 
