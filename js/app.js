@@ -529,14 +529,14 @@ async function loadWeeklySummary() {
         } catch (e) { /* ignore */ }
 
         // 量表提醒：检查核心4量表最近7天是否完成
+        const scaleLabels = { phq9: "PHQ-9", gad7: "GAD-7", cssrs: "C-SSRS", dshi: "DSHI-s" };
         const requiredScales = ["phq9", "gad7", "cssrs", "dshi"];
         const pendingScales = [];
         try {
             for (const type of requiredScales) {
                 const history = await getScaleHistory(type, 7);
                 if (history.length === 0) {
-                    const def = SCALES[type];
-                    pendingScales.push(def ? def.shortName || def.name : type);
+                    pendingScales.push(scaleLabels[type] || type);
                 }
             }
         } catch (e) { /* ignore */ }
@@ -566,10 +566,10 @@ async function loadWeeklySummary() {
             </div>
             ${pendingScales.length > 0 ? `
             <div class="summary-scale-reminder warn">
-                📋 <b>待完成</b>：${pendingScales.join("、")}
+                📋 本周待完成：${pendingScales.join(" · ")}
             </div>` : `
             <div class="summary-scale-reminder ok">
-                ✅ 本周量表全部完成
+                ✅ 本周量表已全部完成
             </div>`}
         `;
 
