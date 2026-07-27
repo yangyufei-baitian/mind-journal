@@ -478,52 +478,211 @@ async function updateTodaySummary() {
 
 async function loadWeeklySummary() {
     const content = document.getElementById("weekly-summary-content");
-    const moods = await getMoodHistory(7);
-    const syms = await getSymptomHistory(7);
+    if (!content) return;
 
-    const dailyM = calculateDailyWeightedMood(moods);
-    const dailyS = calculateDailySymptomScore(syms);
+    try {
+        const moods = await getMoodHistory(7);
+        const syms = await getSymptomHistory(7);
+        const dailyM = calculateDailyWeightedMood(moods);
+        const dailyS = calculateDailySymptomScore(syms);
 
-    const mScores = Object.values(dailyM).map(d => d.score).filter(s => s !== null);
-    const sScores = Object.values(dailyS).map(d => d.score).filter(s => s > 0);
+        // 最近7天日期列表
+        const dateList = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(); d.setDate(d.getDate() - i);
+            dateList.push(d.toISOString().split("T")[0]);
+        }
 
-    const avgMood = mScores.length ? (mScores.reduce((a, b) => a + b, 0) / mScores.length).toFixed(1) : "—";
-    const avgSym = sScores.length ? (sScores.reduce((a, b) => a + b, 0) / sScores.length).toFixed(1) : "—";
-    const recordDays = Object.keys(dailyM).length;
+        // 情绪 sparkline 数据
+        const mScores = dateList.map(d => dailyM[d]?.score ?? null);
+        const mValid = mScores.filter(s => s !== null);
+        const avgMood = mValid.length ? (mValid.reduce((a, b) => a + b, 0) / mValid.length).toFixed(1) : null;
+        const moodEmoji = avgMood ? (avgMood >= 7 ? "😊" : avgMood >= 4 ? "😐" : "😞") : "❓";
 
-    // 趋势：比较前3天和后3天
-    const trend = (arr) => {
-        if (arr.length < 4) return "—";
-        const first = arr.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
-        const last = arr.slice(-3).reduce((a, b) => a + b, 0) / 3;
-        if (last - first > 0.5) return "↑ 上升";
-        if (last - first < -0.5) return "↓ 下降";
-        return "→ 平稳";
-    };
+        // 症状 sparkline 数据
+        const sScores = dateList.map(d => dailyS[d]?.score || 0);
+        const sValid = sScores.filter(s => s > 0);
+        const avgSym = sValid.length ? (sValid.reduce((a, b) => a + b, 0) / sValid.length).toFixed(1) : null;
+        const symEmoji = avgSym ? (avgSym >= 15 ? "🔴" : avgSym >= 8 ? "🟠" : avgSym >= 3 ? "🟡" : "🟢") : "❓";
 
-    const moodEmoji = avgMood !== "—" ?
-        (avgMood >= 7 ? "😊" : avgMood >= 4 ? "😐" : "😞") : "❓";
-    const symLevel = avgSym !== "—" ?
-        (avgSym >= 15 ? "🔴" : avgSym >= 8 ? "🟠" : avgSym >= 3 ? "🟡" : "🟢") : "❓";
+        const recordDays = Object.keys(dailyM).length;
 
-    content.innerHTML = `
-        <div class="weekly-summary-grid">
-            <div class="summary-item">
-                <div class="summary-value">${moodEmoji} ${avgMood}</div>
-                <div class="summary-label">情绪均值</div>
-                <div class="summary-trend" style="color:${trend(mScores).includes('上升') ? 'var(--primary)' : trend(mScores).includes('下降') ? 'var(--danger)' : 'var(--text-muted)'}">${trend(mScores)}</div>
+        // 服药依从率 (本周)
+        let adherence = null;
+        try {
+            const userMeds = await getUserMedications();
+            if (userMeds.length > 0) {
+                let totalTaken = 0, totalScheduled = 0;
+                for (const um of userMeds) {
+                    const freq = um.frequency || {};
+                    const dosesPerDay = (freq.morning ? 1 : 0) + (freq.noon ? 1 : 0) +
+                                       (freq.evening ? 1 : 0) + (freq.bedtime ? 1 : 0);
+                    const logs = await getMedicationLogs(um.id);
+                    const weekLogs = logs.filter(l => dateList.includes(l.date));
+                    totalTaken += weekLogs.length;
+                    totalScheduled += 7 * dosesPerDay;
+                }
+                if (totalScheduled > 0) {
+                    adherence = Math.round(totalTaken / totalScheduled * 100);
+                }
+            }
+        } catch (e) { /* ignore */ }
+
+        // 量表提醒：检查核心4量表最近7天是否完成
+        const requiredScales = ["phq9", "gad7", "cssrs", "dshi"];
+        const pendingScales = [];
+        try {
+            for (const type of requiredScales) {
+                const history = await getScaleHistory(type, 7);
+                if (history.length === 0) {
+                    const def = SCALES[type];
+                    pendingScales.push(def ? def.shortName || def.name : type);
+                }
+            }
+        } catch (e) { /* ignore */ }
+
+        content.innerHTML = `
+            <div class="weekly-summary-grid">
+                <div class="summary-item" id="ws-mood">
+                    <div class="summary-value">${moodEmoji} ${avgMood ?? "—"}</div>
+                    <div class="summary-label">情绪均值</div>
+                    <canvas class="summary-sparkline" id="spark-mood"></canvas>
+                </div>
+                <div class="summary-item" id="ws-symptom">
+                    <div class="summary-value">${symEmoji} ${avgSym ?? "—"}</div>
+                    <div class="summary-label">症状均分</div>
+                    <canvas class="summary-sparkline" id="spark-symptom"></canvas>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">📅 ${recordDays}<span style="font-size:0.75rem;font-weight:400;color:var(--text-light);">/7</span></div>
+                    <div class="summary-label">记录天数</div>
+                    <div class="summary-trend">${recordDays >= 7 ? "✅ 全勤" : recordDays >= 4 ? "📝 加油" : "💤 待开始"}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">💊 ${adherence !== null ? adherence + "%" : "—"}</div>
+                    <div class="summary-label">服药依从</div>
+                    <div class="summary-trend" style="color:${adherence !== null ? (adherence >= 80 ? 'var(--primary)' : adherence >= 50 ? 'var(--accent)' : 'var(--danger)') : 'var(--text-muted)'}">${adherence !== null ? (adherence >= 80 ? "✅ 良好" : adherence >= 50 ? "⚠️ 注意" : "🚨 偏低") : "无药品"}</div>
+                </div>
             </div>
-            <div class="summary-item">
-                <div class="summary-value">${symLevel} ${avgSym}</div>
-                <div class="summary-label">症状均分</div>
-                <div class="summary-trend" style="color:${trend(sScores).includes('下降') ? 'var(--primary)' : trend(sScores).includes('上升') ? 'var(--danger)' : 'var(--text-muted)'}">${trend(sScores).includes('上升') ? '↑ 加重' : trend(sScores).includes('下降') ? '↓ 好转' : '→ 平稳'}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-value">📅 ${recordDays}</div>
-                <div class="summary-label">记录天数</div>
-                <div class="summary-trend" style="color:var(--text-muted);">/7天</div>
-            </div>
-        </div>`;
+            ${pendingScales.length > 0 ? `
+            <div class="summary-scale-reminder warn">
+                📋 <b>待完成</b>：${pendingScales.join("、")}
+            </div>` : `
+            <div class="summary-scale-reminder ok">
+                ✅ 本周量表全部完成
+            </div>`}
+        `;
+
+        // 渲染 sparkline (延迟确保 canvas 在 DOM 中)
+        setTimeout(() => {
+            renderSparkline("spark-mood", mScores, { type: "line", min: 1, max: 10, color: "#5B8C5A", fillColor: "rgba(91,140,90,0.15)" });
+            renderSparkline("spark-symptom", sScores, { type: "bar", color: "#E76F6F", fillColor: "rgba(231,111,111,0.3)" });
+        }, 50);
+
+    } catch (e) {
+        console.warn("loadWeeklySummary error:", e);
+        content.innerHTML = '<div class="summary-loading">—</div>';
+    }
+}
+
+// ==================== Sparkline 微型图表 ====================
+
+function renderSparkline(canvasId, data, opts = {}) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    const { type = "line", min, max, color = "#5B8C5A", fillColor = "rgba(91,140,90,0.12)" } = opts;
+
+    // 高 DPI
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+
+    const valid = data.filter(d => d !== null && d !== undefined);
+    if (valid.length < 2) {
+        // 不够画线，显示占位
+        ctx.fillStyle = "#e0e0e0";
+        ctx.fillRect(0, h / 2 - 1, w, 2);
+        return;
+    }
+
+    const dataMin = min !== undefined ? min : Math.min(...valid);
+    const dataMax = max !== undefined ? max : Math.max(...valid);
+    const range = dataMax - dataMin || 1;
+
+    const padX = 2;
+    const padY = 4;
+    const plotW = w - padX * 2;
+    const plotH = h - padY * 2;
+
+    const xStep = data.length > 1 ? plotW / (data.length - 1) : plotW;
+
+    const points = data.map((d, i) => {
+        if (d === null || d === undefined) return null;
+        const x = padX + i * xStep;
+        const y = padY + plotH - ((d - dataMin) / range) * plotH;
+        return { x, y, v: d };
+    });
+
+    const validPoints = points.filter(p => p !== null);
+
+    if (type === "line") {
+        // 面积填充
+        if (validPoints.length >= 2) {
+            ctx.beginPath();
+            ctx.moveTo(validPoints[0].x, h - padY);
+            validPoints.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(validPoints[validPoints.length - 1].x, h - padY);
+            ctx.closePath();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+        }
+
+        // 折线
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.8;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+
+        // 跳过 null 断开连线
+        let penDown = false;
+        for (const p of points) {
+            if (p === null) { penDown = false; continue; }
+            if (!penDown) { ctx.moveTo(p.x, p.y); penDown = true; }
+            else { ctx.lineTo(p.x, p.y); }
+        }
+        ctx.stroke();
+
+        // 数据点
+        validPoints.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+        });
+
+    } else if (type === "bar") {
+        const barW = Math.max(3, xStep * 0.6);
+        validPoints.forEach(p => {
+            const barH = Math.max(2, h - padY - p.y);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.roundRect(p.x - barW / 2, p.y, barW, barH, [1.5, 1.5, 0, 0]);
+            ctx.fill();
+        });
+    }
 }
 
 // ==================== 日记 ====================
