@@ -314,27 +314,52 @@ body {
 /* ==================== 周摘要卡片 ==================== */
 .weekly-summary-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
     text-align: center;
 }
 .summary-item {
-    padding: 10px 6px;
-    border-radius: 10px;
+    padding: 10px 8px;
+    border-radius: 12px;
     background: #F8F9FA;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
 }
 .summary-item .summary-value {
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     font-weight: 700;
 }
 .summary-item .summary-label {
     font-size: 0.68rem;
     color: var(--text-light);
-    margin-top: 2px;
 }
 .summary-item .summary-trend {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
+}
+.summary-sparkline {
+    width: 100%;
+    height: 32px;
     margin-top: 2px;
+}
+.summary-scale-reminder {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+.summary-scale-reminder.warn {
+    background: #FFF8E1;
+    color: #E67E22;
+}
+.summary-scale-reminder.ok {
+    background: #E8F5E9;
+    color: #27AE60;
 }
 .summary-loading {
     text-align: center;
