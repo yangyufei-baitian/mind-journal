@@ -13,7 +13,7 @@ class UserCreate(BaseModel):
 
 # v0.5: 账号系统
 class UserRegister(BaseModel):
-    username: str = Field(..., min_length=2, max_length=50)
+    username: str = Field(..., min_length=2, max_length=20, pattern=r"^[一-龥a-zA-Z0-9_]+$")
     password: str = Field(..., min_length=4, max_length=100)
     anonymous_id: str  # 绑定已有本地数据
 

@@ -413,6 +413,16 @@ async function clearAllData() {
     await db.diaryEntries.clear();
     await db.contacts.clear();
     await db.musicTracks.clear();
+    await db.userMedications.clear();
+    await db.medicationLog.clear();
+    await db.scaleEntries.clear();
+    await db.consentSettings.clear();
+}
+
+// 重置本地身份: 删除旧 anonymous_id, 生成新的 (用于切换用户)
+async function resetAnonymousId() {
+    await db.userInfo.clear();
+    return await getUserId();  // 自动生成新的
 }
 
 // ==================== 服药管理 (v3) ====================

@@ -660,7 +660,7 @@ async function buildAccountUI() {
         container.innerHTML = `
             <div class="account-form" id="account-form">
                 <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:10px;">注册账号后，数据可备份到云端，换手机也能恢复。</p>
-                <input type="text" id="account-username" placeholder="用户名（至少2个字符）">
+                <input type="text" id="account-username" placeholder="用户名（2-20字符，中英文/数字/下划线）">
                 <input type="password" id="account-password" placeholder="密码（至少4个字符）">
                 <div style="display:flex;gap:8px;">
                     <button class="btn-primary" onclick="handleRegister()" style="flex:1;">📝 注册</button>
@@ -674,8 +674,14 @@ async function handleRegister() {
     const username = document.getElementById("account-username").value.trim();
     const password = document.getElementById("account-password").value;
 
-    if (username.length < 2 || password.length < 4) {
-        showToast("用户名至少2个字符，密码至少4个字符");
+    // 用户名校验: 2-20字符, 支持中英文/数字/下划线
+    const nameRegex = /^[一-龥a-zA-Z0-9_]{2,20}$/;
+    if (!nameRegex.test(username)) {
+        showToast("用户名需2-20个字符，支持中英文、数字、下划线");
+        return;
+    }
+    if (password.length < 4) {
+        showToast("密码至少4个字符");
         return;
     }
 
@@ -696,10 +702,13 @@ async function handleRegister() {
         const data = await resp.json();
         localStorage.setItem("mj_auth_token", data.token);
         localStorage.setItem("mj_username", data.username);
-        // 同步服务器分配的 anonymous_id，确保后续 sync 能匹配
+        // 同步服务器分配的 anonymous_id
         if (data.anonymous_id) await setUserId(data.anonymous_id);
         showToast("注册成功! 数据将自动同步");
         buildAccountUI();
+        // 新用户显示引导
+        resetOnboarding();
+        setTimeout(() => showOnboarding(), 400);
     } catch (e) {
         console.error(e);
         showToast("网络错误，请确认后端已启动");
@@ -742,9 +751,24 @@ async function handleLogin() {
 }
 
 function handleLogout() {
-    if (!confirm("确定退出登录吗？本地数据不会丢失。")) return;
+    if (!confirm("退出登录将清除本地所有数据。\n\n云端已同步的数据不受影响，重新登录同一账号后可恢复。\n\n确定退出吗？")) return;
+
+    // 清除认证信息
     localStorage.removeItem("mj_auth_token");
     localStorage.removeItem("mj_username");
-    showToast("已退出登录");
-    buildAccountUI();
+    // 重置引导页，让新用户也能看到
+    resetOnboarding();
+
+    // 清除本地数据库 + 重置身份
+    clearAllData().then(() => {
+        resetAnonymousId().then((newId) => {
+            console.log("[MindJournal] Logged out, new anonymous_id:", newId);
+            showToast("已退出登录，本地数据已清除");
+            buildAccountUI();
+            updateTodaySummary();
+            loadWeeklySummary();
+            renderMedicationCheckins();
+            renderScaleCards();
+        });
+    });
 }

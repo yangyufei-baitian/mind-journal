@@ -116,6 +116,16 @@ Phase 1 [✅ 完成] → Phase 2 [✅ 进行中] → Phase 3 [待开始] → Pha
 | 07-27 | 🔢 SW bump v0.16 + HTML_VER v8-onboarding + CSS v12 | ✅ |
 | 07-27 | 📱 localStorage "mj_onboarding_done" 标记, 首次访问自动触发 | ✅ |
 
+### 2.7 bugfix: 多用户隔离 + 用户名校验 + 引导重置 (07-27)
+
+| 日期 | 内容 | 状态 |
+|------|------|:--:|
+| 07-27 | 🐛 **Logout fix**: 退出登录清空 IndexedDB 所有表 + 重置 anonymous_id + 清除引导标记 | ✅ |
+| 07-27 | 🐛 **Data isolation**: clearAllData() 扩展到12张表, 新增 resetAnonymousId() | ✅ |
+| 07-27 | 🐛 **Register fix**: 新用户注册后自动弹出引导页 | ✅ |
+| 07-27 | 🔧 **Username**: 2-20字符, 仅允许中英文/数字/下划线 (前后端统一校验) | ✅ |
+| 07-27 | 🔢 SW bump v0.17 | ✅ |
+
 ---
 
 ## Phase 3 📜 软著申请 (目标: 1-3月)
