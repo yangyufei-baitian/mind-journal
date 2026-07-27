@@ -345,13 +345,11 @@ body {
 }
 .summary-scale-reminder {
     margin-top: 8px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: 10px;
-    font-size: 0.78rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    justify-content: center;
+    font-size: 0.72rem;
+    text-align: center;
+    line-height: 1.4;
 }
 .summary-scale-reminder.warn {
     background: #FFF8E1;
