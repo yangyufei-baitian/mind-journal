@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>图标生成器 — 心灵日记</title>
+<style>
+  body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; }
+  h1 { color: #5B8C5A; } canvas { border: 1px solid #ddd; border-radius: 12px; margin: 8px; }
+  .previews { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+  .size-group { text-align: center; }
+  .size-group span { display: block; font-size: 0.8rem; color: #666; margin-top: 4px; }
+  button { background: #5B8C5A; color: white; border: none; padding: 12px 24px;
+    border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 4px; }
+  button:hover { background: #4A8F48; }
+  .done { color: #5B8C5A; font-weight: bold; margin-left: 10px; display: none; }
+</style></head>
+<body>
+<h1>🧠 心灵日记 — App 图标生成器</h1>
+<p>预览：</p>
+<div class="previews" id="previews"></div>
+<br>
+<button onclick="downloadAll()">📥 一键下载全部尺寸</button>
+<span class="done" id="done">✅ 已下载! 将它们放入 icons/ 目录即可</span>
+
+<script>
+const SVG_DATA = `icons/icon.svg`;
+
+async function loadSVG() {
+  const r = await fetch(SVG_DATA);
+  return await r.text();
+}
+
+async function renderIcon(size) {
+  const svgText = await loadSVG();
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  const blob = new Blob([svgText], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  return new Promise((resolve) => {
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      resolve(canvas);
+    };
+    img.src = url;
+  });
+}
+
+const SIZES = [
+  { label:'favicon', w:32, h:32 },
+  { label:'PWA-48', w:48, h:48 },
+  { label:'PWA-72', w:72, h:72 },
+  { label:'PWA-96', w:96, h:96 },
+  { label:'PWA-128', w:128, h:128 },
+  { label:'PWA-144', w:144, h:144 },
+  { label:'PWA-152', w:152, h:152 },
+  { label:'PWA-192', w:192, h:192 },
+  { label:'PWA-384', w:384, h:384 },
+  { label:'PWA-512', w:512, h:512 },
+];
+
+async function show() {
+  const box = document.getElementById('previews');
+  for (const s of SIZES) {
+    const c = await renderIcon(s.w);
+    const div = document.createElement('div'); div.className = 'size-group';
+    div.appendChild(c);
+    div.innerHTML += `<span>${s.label}<br>${s.w}×${s.h}</span>`;
+    box.appendChild(div);
+  }
+}
+
+function downloadAll() {
+  SIZES.forEach(async s => {
+    const c = await renderIcon(s.w);
+    c.toBlob(b => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = `icon-${s.w}x${s.h}.png`;
+      a.click();
+    });
+  });
+  document.getElementById('done').style.display = 'inline';
+}
+
+show();
+</script>
+</body>
+</html>
