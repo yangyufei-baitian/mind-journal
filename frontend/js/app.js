@@ -101,6 +101,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("export-report")?.addEventListener("click", showReportDialog);
     document.getElementById("export-data")?.addEventListener("click", exportDataHandler);
     document.getElementById("clear-data")?.addEventListener("click", clearDataHandler);
+    // CSV 导出按钮
+    document.getElementById("export-all-csv")?.addEventListener("click", exportAllCSV);
+    document.getElementById("export-mood-csv")?.addEventListener("click", () => csvExportWrapper(exportMoodCSV, "情绪"));
+    document.getElementById("export-symptom-csv")?.addEventListener("click", () => csvExportWrapper(exportSymptomCSV, "症状"));
+    document.getElementById("export-scale-csv")?.addEventListener("click", () => csvExportWrapper(exportScaleCSV, "量表"));
+    document.getElementById("export-med-csv")?.addEventListener("click", () => csvExportWrapper(exportMedicationCSV, "服药"));
 
     document.getElementById("share-mood")?.addEventListener("change", async function() {
         await updateConsentSettings({ share_mood: this.checked });
@@ -541,6 +547,21 @@ async function exportDataHandler() {
     const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url;
     a.download = `mind-journal-${new Date().toISOString().split("T")[0]}.json`; a.click(); URL.revokeObjectURL(url);
     showToast("数据已导出 ✅");
+}
+
+// CSV 导出包装器 (统一错误处理 + Toast)
+async function csvExportWrapper(exportFn, label) {
+    try {
+        const count = await exportFn();
+        if (count > 0) {
+            showToast(`✅ ${label}CSV 已导出 (${count} 条记录)`);
+        } else {
+            showToast(`📭 ${label}无数据可导出`);
+        }
+    } catch (e) {
+        console.error(`CSV export (${label}) failed:`, e);
+        showToast(`❌ ${label}CSV 导出失败: ${e.message || "未知错误"}`);
+    }
 }
 
 function clearDataHandler() {
