@@ -63,18 +63,32 @@ def api_root():
 
 # 托管前端静态文件 (同域部署: 所有未匹配 API 路由的请求回落 index.html)
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
-HAS_STATIC = os.path.isdir(STATIC_DIR)
 
-if HAS_STATIC:
-    @app.get("/{full_path:path}")
-    async def serve_static(full_path: str = ""):
-        """Catch-all: serve static files, fallback to index.html for SPA routing."""
-        # Serve requested file if it exists
-        file_path = os.path.join(STATIC_DIR, full_path) if full_path else os.path.join(STATIC_DIR, "index.html")
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
-        # SPA fallback: any unknown path serves index.html
-        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+@app.get("/")
+async def serve_root():
+    """Serve index.html at root."""
+    idx = os.path.join(STATIC_DIR, "index.html")
+    if os.path.isfile(idx):
+        return FileResponse(idx)
+    return {"message": "前端静态文件尚未部署。请确认 Render build 已执行 cp -r ../frontend/* static/"}
+
+
+@app.get("/{full_path:path}")
+async def serve_static(full_path: str):
+    """Catch-all: serve requested static file, fallback to index.html for SPA routing."""
+    # Don't intercept API routes — they are matched first by FastAPI routing order
+    if full_path.startswith("api/") or full_path in ("health", "docs", "openapi.json"):
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+
+    file_path = os.path.join(STATIC_DIR, full_path)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    # SPA fallback
+    idx = os.path.join(STATIC_DIR, "index.html")
+    if os.path.isfile(idx):
+        return FileResponse(idx)
+    return {"detail": "Not Found"}
 
 
 if __name__ == "__main__":
