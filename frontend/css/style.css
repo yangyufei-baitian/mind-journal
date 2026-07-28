@@ -921,3 +921,50 @@ body {
     color: var(--primary); flex: 1; text-align: center;
 }
 .ob-btn-next-outline:active { background: #E8F5E9; }
+
+/* ==================== SUS 系统可用性量表 ==================== */
+.sus-row {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.sus-row:last-child { border-bottom: none; }
+.sus-q-label {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    color: var(--text);
+}
+.sus-options {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.sus-radio-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.15s;
+    min-width: 32px;
+}
+.sus-radio-label:hover { background: #E8F5E9; }
+.sus-radio-label:has(input:checked) { background: var(--primary); }
+.sus-radio-label:has(input:checked) span { color: #fff; }
+.sus-radio-label span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.sus-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.sus-end-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-left: 8px;
+    white-space: nowrap;
+}

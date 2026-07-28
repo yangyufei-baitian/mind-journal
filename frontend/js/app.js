@@ -27,6 +27,20 @@ const EMOTION_TAGS_NEGATIVE = [
     { id: "悲伤", emoji: "😢", label: "悲伤" }
 ];
 
+// SUS (System Usability Scale) — Brooke 1986, 10题标准中文版
+const SUS_QUESTIONS = [
+    { id: 1, text: "我愿意经常使用这个系统", positive: true },
+    { id: 2, text: "我觉得这个系统没必要这么复杂", positive: false },
+    { id: 3, text: "我觉得这个系统很容易使用", positive: true },
+    { id: 4, text: "我觉得我需要有人帮助才能使用这个系统", positive: false },
+    { id: 5, text: "我觉得这个系统的各个功能整合得很好", positive: true },
+    { id: 6, text: "我觉得这个系统里有太多不一致的地方", positive: false },
+    { id: 7, text: "我觉得大多数人都能很快学会使用这个系统", positive: true },
+    { id: 8, text: "我觉得这个系统使用起来很麻烦", positive: false },
+    { id: 9, text: "我对使用这个系统很有信心", positive: true },
+    { id: 10, text: "我需要学很多东西才能开始使用这个系统", positive: false },
+];
+
 let currentTimePeriod = null;
 let selectedSymptoms = {};
 let symptomListExpanded = false;
@@ -43,7 +57,7 @@ function switchPage(pageName) {
     try {
         if (pageName === "stats") { buildSingleSymptomSelector(); loadCharts(); renderScaleCards(); renderScaleTrendChart(); }
         else if (pageName === "music") { loadMusicList(); }
-        else if (pageName === "settings") { loadContactList(); loadConsentSettings(); }
+        else if (pageName === "settings") { loadContactList(); loadConsentSettings(); renderSUSForm(); }
         else if (pageName === "record") { updateTodaySummary(); loadWeeklySummary(); renderMedicationCheckins(); }
         else if (pageName === "diary") { loadDiaryList(); }
     } catch (e) {
@@ -107,6 +121,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("export-symptom-csv")?.addEventListener("click", () => csvExportWrapper(exportSymptomCSV, "症状"));
     document.getElementById("export-scale-csv")?.addEventListener("click", () => csvExportWrapper(exportScaleCSV, "量表"));
     document.getElementById("export-med-csv")?.addEventListener("click", () => csvExportWrapper(exportMedicationCSV, "服药"));
+    document.getElementById("export-sus-csv")?.addEventListener("click", () => csvExportWrapper(exportSUSCSV, "系统可用性(SUS)"));
+    document.getElementById("submit-sus")?.addEventListener("click", submitSUS);
+    document.getElementById("submit-feedback")?.addEventListener("click", submitFeedback);
 
     document.getElementById("share-mood")?.addEventListener("change", async function() {
         await updateConsentSettings({ share_mood: this.checked });
@@ -929,4 +946,79 @@ function handleLogout() {
             renderScaleCards();
         });
     });
+}
+
+// ==================== SUS 系统可用性量表 ====================
+
+function renderSUSForm() {
+    const container = document.getElementById("sus-form");
+    if (!container) return;
+    container.innerHTML = SUS_QUESTIONS.map((q, i) => `
+        <div class="sus-row">
+            <div class="sus-q-label">${i + 1}. ${q.text}</div>
+            <div class="sus-options">
+                ${[1, 2, 3, 4, 5].map(v => `
+                    <label class="sus-radio-label">
+                        <input type="radio" name="sus-q${q.id}" value="${v}" class="sus-radio">
+                        <span>${v}</span>
+                    </label>
+                `).join("")}
+                <span class="sus-end-label">${q.positive ? "强烈同意" : "强烈不同意"}</span>
+            </div>
+        </div>
+    `).join("");
+}
+
+async function submitSUS() {
+    const scores = [];
+    for (const q of SUS_QUESTIONS) {
+        const checked = document.querySelector(`input[name="sus-q${q.id}"]:checked`);
+        if (!checked) {
+            showToast("请完成全部10道题后再提交");
+            return;
+        }
+        scores.push(parseInt(checked.value));
+    }
+
+    // Brooke 1986 公式: 奇数(正向)=分-1, 偶数(反向)=5-分, 总分×2.5
+    let susTotal = 0;
+    for (let i = 0; i < scores.length; i++) {
+        const q = SUS_QUESTIONS[i];
+        susTotal += q.positive ? (scores[i] - 1) : (5 - scores[i]);
+    }
+    susTotal = Math.round(susTotal * 2.5);
+
+    try {
+        await db.susResults.add({
+            scores: scores,
+            sus_total: susTotal,
+            feedback: "",
+            created_at: new Date().toISOString()
+        });
+        const resultEl = document.getElementById("sus-result");
+        const label = susTotal >= 80 ? "优秀 🎉" : susTotal >= 68 ? "良好 👍" : susTotal >= 50 ? "一般" : "需改进 ⚠️";
+        if (resultEl) resultEl.textContent = `✅ 已提交！SUS 得分：${susTotal}/100（${label}）`;
+        showToast(`SUS: ${susTotal}/100 — ${label}`);
+    } catch (e) {
+        handleError(e, "提交SUS评分", { toast: true });
+    }
+}
+
+async function submitFeedback() {
+    const textarea = document.getElementById("feedback-text");
+    const text = (textarea?.value || "").trim();
+    if (!text) { showToast("请输入反馈内容"); return; }
+
+    try {
+        await db.susResults.add({
+            scores: [],
+            sus_total: null,
+            feedback: text,
+            created_at: new Date().toISOString()
+        });
+        if (textarea) textarea.value = "";
+        showToast("✅ 感谢你的反馈！");
+    } catch (e) {
+        handleError(e, "提交反馈", { toast: true });
+    }
 }
