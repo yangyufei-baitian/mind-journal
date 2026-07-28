@@ -16,7 +16,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from database import init_db
 from routes import auth, data, consent
 
@@ -61,10 +61,20 @@ def api_root():
     return {"message": "心灵日记 API v0.6.0", "docs": "/docs"}
 
 
-# 托管前端静态文件 (同域部署: Render 直接提供全栈服务)
+# 托管前端静态文件 (同域部署: 所有未匹配 API 路由的请求回落 index.html)
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
-if os.path.isdir(STATIC_DIR):
-    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+HAS_STATIC = os.path.isdir(STATIC_DIR)
+
+if HAS_STATIC:
+    @app.get("/{full_path:path}")
+    async def serve_static(full_path: str = ""):
+        """Catch-all: serve static files, fallback to index.html for SPA routing."""
+        # Serve requested file if it exists
+        file_path = os.path.join(STATIC_DIR, full_path) if full_path else os.path.join(STATIC_DIR, "index.html")
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        # SPA fallback: any unknown path serves index.html
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
 if __name__ == "__main__":
