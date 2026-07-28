@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#5B8C5A">
+    <meta name="description" content="心灵日记 - 精神健康记录助手">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <title>心灵日记</title>
+    <link rel="stylesheet" href="css/style.css?v=17">
+    <script>window._HTML_VER = "v13-sus";</script>
+    <script src="js/vendor/chart.umd.min.js"></script>
+    <script src="js/vendor/dexie.min.js"></script>
+    <script src="js/vendor/html2pdf.bundle.min.js"></script>
+    <script src="js/vendor/jszip.min.js"></script>
+</head>
+<body>
+
+    <header id="app-header">
+        <h1 id="page-title">📝 今日记录</h1>
+        <span id="sync-status" class="sync-badge" title="同步状态">💾</span>
+    </header>
+
+    <!-- ==================== 1. 记录页 ==================== -->
+    <main id="page-record" class="page active">
+
+        <!-- 本周摘要 -->
+        <section class="card" id="weekly-summary-card">
+            <h2 class="card-title">📊 本周概况</h2>
+            <div id="weekly-summary-content">
+                <div class="summary-loading">加载中...</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">⏰ 选择时段</h2>
+            <div class="time-period-grid" id="time-periods"></div>
+        </section>
+
+        <section class="card" id="mood-section">
+            <h2 class="card-title">😊 情绪评分</h2>
+            <div class="mood-slider-container">
+                <div class="mood-emoji" id="mood-emoji">😐</div>
+                <div class="mood-score" id="mood-score">5</div>
+                <input type="range" id="mood-slider" min="1" max="10" value="5" class="slider">
+                <div class="mood-labels"><span>😢 很差</span><span>😊 很好</span></div>
+                <div class="slider-anchors">
+                    <span class="anchor" style="left:10%">非常差</span>
+                    <span class="anchor" style="left:30%">比较差</span>
+                    <span class="anchor" style="left:50%">一般</span>
+                    <span class="anchor" style="left:70%">不错</span>
+                    <span class="anchor" style="left:90%">很好</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">💭 感受标签（可多选）</h2>
+            <h3 class="sub-title emotion-positive">😊 积极</h3>
+            <div class="tag-grid" id="emotion-positive"></div>
+            <h3 class="sub-title emotion-neutral">😐 中性</h3>
+            <div class="tag-grid" id="emotion-neutral"></div>
+            <h3 class="sub-title emotion-negative">😞 消极</h3>
+            <div class="tag-grid" id="emotion-negative"></div>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">🏥 症状记录</h2>
+            <p class="card-desc">选择今天这个时段出现的症状及其严重程度</p>
+            <!-- 搜索+筛选 -->
+            <div class="symptom-search-row">
+                <input type="text" id="symptom-search" placeholder="🔍 搜索症状..."
+                       class="input-full" oninput="filterSymptoms()">
+                <select id="symptom-category-filter" onchange="filterSymptoms()" style="margin-top:8px;">
+                    <option value="all">全部分类</option>
+                </select>
+            </div>
+            <!-- 已选症状速览 -->
+            <div id="selected-symptoms-badges" class="selected-symptoms-badges" style="display:none;"></div>
+            <!-- 折叠切换 -->
+            <button id="symptom-toggle-btn" class="btn-secondary symptom-toggle" onclick="toggleSymptomList()">
+                📋 展开症状列表 (39项)
+            </button>
+            <div id="symptom-list" style="display:none;"></div>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">💊 服药打卡</h2>
+            <div id="medication-checkin-area">
+                <p class="med-empty-hint">点击下方按钮添加你的药品</p>
+            </div>
+            <button class="btn-secondary" onclick="showMedicationManager()" style="margin-top:8px;">➕ 管理药品</button>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">📝 备注（可选）</h2>
+            <textarea id="mood-note" rows="2" placeholder="今天这个时段发生了什么..."></textarea>
+            <button id="save-record" class="btn-primary">💾 保存记录</button>
+        </section>
+
+        <section class="card" id="today-summary" style="display:none;">
+            <h2 class="card-title">📋 今日记录一览</h2>
+            <div id="today-summary-content"></div>
+        </section>
+    </main>
+
+    <!-- ==================== 2. 统计页 ==================== -->
+    <main id="page-stats" class="page">
+
+        <!-- 临床量表 -->
+        <section class="card" id="scale-section">
+            <h2 class="card-title">📋 临床量表</h2>
+            <p class="card-desc">标准化自我评估工具，结果便于医生参考</p>
+            <div class="scale-cards-grid" id="scale-cards-container">
+                <!-- JS 动态渲染 -->
+            </div>
+        </section>
+
+        <!-- 量表分数趋势 -->
+        <section class="card" id="scale-trend-section">
+            <h2 class="card-title">📈 量表分数趋势</h2>
+            <select id="scale-trend-select" onchange="renderScaleTrendChart()">
+                <option value="phq9">PHQ-9 抑郁症筛查</option>
+                <option value="gad7">GAD-7 焦虑症筛查</option>
+                <option value="cssrs">C-SSRS 自杀风险评估</option>
+                <option value="dshi">自伤行为筛查</option>
+                <option value="scl90">SCL-90 症状自评量表</option>
+            </select>
+            <div class="chart-container">
+                <canvas id="scale-trend-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- 加权情绪趋势 -->
+        <section class="card">
+            <h2 class="card-title">📈 情绪趋势</h2>
+            <div class="chart-tabs">
+                <button class="chart-tab" data-period="day">今日</button>
+                <button class="chart-tab active" data-period="week">本周</button>
+                <button class="chart-tab" data-period="month">本月</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="mood-chart"></canvas>
+            </div>
+            <p class="chart-note">* 每日分 = Σ(时长×生物权重×分数)/Σ(时长×生物权重)，点击数据点查看详情</p>
+        </section>
+
+        <!-- 症状总分 -->
+        <section class="card">
+            <h2 class="card-title">🏥 每日症状分</h2>
+            <div class="chart-container">
+                <canvas id="symptom-chart"></canvas>
+            </div>
+            <p class="chart-note">* 症状分 = Σ(基础权重 × 严重度)</p>
+        </section>
+
+        <!-- 单症状趋势 -->
+        <section class="card">
+            <h2 class="card-title">🔍 单症状趋势</h2>
+            <div class="form-row">
+                <select id="single-symptom-select" onchange="loadSingleSymptomChart()">
+                    <option value="">选择要追踪的症状...</option>
+                </select>
+            </div>
+            <div class="chart-container" id="single-symptom-chart-container">
+                <canvas id="single-symptom-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- 每日详情 -->
+        <section class="card" id="daily-detail" style="display:none;">
+            <h2 class="card-title" id="daily-detail-title">📋 详情</h2>
+            <div id="daily-detail-content"></div>
+        </section>
+
+        <!-- 历史列表 -->
+        <section class="card">
+            <h2 class="card-title">📋 历史记录（点击查看详情）</h2>
+            <div id="history-list" class="history-list"></div>
+        </section>
+    </main>
+
+    <!-- ==================== 3. 日记 ==================== -->
+    <main id="page-diary" class="page">
+        <section class="card">
+            <h2 class="card-title">📔 写日记</h2>
+            <input type="text" id="diary-title" placeholder="今天想写点什么？" class="input-full" style="margin-bottom:10px;">
+            <textarea id="diary-content" rows="6" placeholder="记录今天的想法和感受..."></textarea>
+            <div class="form-row" style="margin-top:10px;">
+                <label>此刻心情</label>
+                <select id="diary-mood">
+                    <option value="5">😐 一般</option><option value="1">😢 很差</option>
+                    <option value="3">😞 不太好</option><option value="7">🙂 不错</option><option value="10">😄 很好</option>
+                </select>
+            </div>
+            <button id="save-diary" class="btn-primary">💾 保存日记</button>
+        </section>
+        <section class="card">
+            <h2 class="card-title">📚 日记列表</h2>
+            <div id="diary-list" class="diary-list"></div>
+        </section>
+    </main>
+
+    <!-- ==================== 4. 音乐 ==================== -->
+    <main id="page-music" class="page">
+        <!-- 内置环境音 — 紧急躯体化时一键播放 -->
+        <section class="card">
+            <h2 class="card-title">🎧 内置舒缓环境音</h2>
+            <p class="card-desc">无需导入文件，点击即播。适合焦虑/躯体化时快速使用。</p>
+            <div class="ambient-grid" id="ambient-sounds">
+                <!-- JS动态生成 -->
+            </div>
+            <div id="ambient-controls" class="ambient-controls hidden">
+                <div class="ambient-now-playing" id="ambient-now-playing"></div>
+                <input type="range" id="ambient-volume" min="5" max="100" value="30"
+                       oninput="setAmbientVolume(this.value/100)" class="slider">
+                <button class="btn-danger" onclick="stopAmbientSound()" style="margin-top:8px;">⏹ 停止播放</button>
+            </div>
+        </section>
+
+        <!-- 自定义音乐 -->
+        <section class="card">
+            <h2 class="card-title">🎵 我的安心音乐</h2>
+            <p class="card-desc">添加让你感到安全和放松的音乐</p>
+            <input type="file" id="music-file" accept="audio/*" class="input-full" style="margin-bottom:10px;">
+            <input type="text" id="music-name" placeholder="给这首歌起个名字" class="input-full" style="margin-bottom:10px;">
+            <button id="add-music" class="btn-primary">➕ 添加音乐</button>
+        </section>
+        <section class="card">
+            <h2 class="card-title">🎶 播放列表</h2>
+            <div id="music-list" class="music-list"></div>
+        </section>
+        <div id="music-player" class="music-player hidden">
+            <div id="now-playing">未在播放</div>
+            <audio id="audio-player" controls></audio>
+        </div>
+    </main>
+
+    <!-- ==================== 5. 设置 ==================== -->
+    <main id="page-settings" class="page">
+        <!-- v0.5: 账号系统 -->
+        <section class="card" id="account-card">
+            <h2 class="card-title">👤 账号</h2>
+            <div id="account-area">
+                <!-- JS动态生成 -->
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">🆘 紧急联系人</h2>
+            <input type="text" id="contact-name" placeholder="联系人姓名" class="input-full" style="margin-bottom:8px;">
+            <input type="tel" id="contact-phone" placeholder="电话号码" class="input-full" style="margin-bottom:8px;">
+            <input type="text" id="contact-relation" placeholder="关系" class="input-full" style="margin-bottom:8px;">
+            <button id="add-contact" class="btn-primary">➕ 添加联系人</button>
+            <div id="contact-list" class="contact-list"></div>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">🔬 研究数据共享</h2>
+            <p class="card-desc">您的数据默认只存储在本地。开启后，将匿名分享以下数据用于研究。您随时可以关闭或撤回。</p>
+            <div class="toggle-row">
+                <span>分享情绪记录</span>
+                <label class="toggle"><input type="checkbox" id="share-mood"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+                <span>分享日记内容</span>
+                <label class="toggle"><input type="checkbox" id="share-diary"><span class="toggle-slider"></span></label>
+            </div>
+            <button id="sync-now" class="btn-secondary">🔄 立即同步</button>
+            <p id="sync-info" class="sync-info"></p>
+        </section>
+
+        <section class="card" id="sus-card">
+            <h2 class="card-title">📋 系统反馈</h2>
+            <p class="card-desc">帮我们改进心灵日记 — 你的回答只用于研究，不关联个人身份</p>
+            <div id="sus-form"></div>
+            <button id="submit-sus" class="btn-primary" style="margin-top:12px;">📤 提交可用性评分</button>
+            <p id="sus-result" class="sync-info" style="margin-top:4px;"></p>
+            <hr style="margin:16px 0;border-color:var(--border);">
+            <p class="card-desc">💬 还有什么想说的？（可选）</p>
+            <textarea id="feedback-text" rows="2" placeholder="哪里好用？哪里不好用？有什么建议？" style="width:100%;margin-bottom:8px;"></textarea>
+            <button id="submit-feedback" class="btn-secondary">📤 提交反馈</button>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">📦 数据管理</h2>
+            <button id="export-all-csv" class="btn-primary" style="margin-bottom:10px;">📥 一键导出全部 (CSV+数据字典 ZIP)</button>
+            <p class="card-desc" style="margin:0 0 6px;font-size:0.8rem;">分别导出 (直接导入 SPSS/R/Python)：</p>
+            <div class="export-csv-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                <button id="export-mood-csv" class="btn-secondary btn-sm" style="flex:1;min-width:100px;font-size:0.82rem;">😊 情绪CSV</button>
+                <button id="export-symptom-csv" class="btn-secondary btn-sm" style="flex:1;min-width:100px;font-size:0.82rem;">🏥 症状CSV</button>
+                <button id="export-scale-csv" class="btn-secondary btn-sm" style="flex:1;min-width:100px;font-size:0.82rem;">📋 量表CSV</button>
+                <button id="export-med-csv" class="btn-secondary btn-sm" style="flex:1;min-width:100px;font-size:0.82rem;">💊 服药CSV</button>
+                <button id="export-sus-csv" class="btn-secondary btn-sm" style="flex:1;min-width:100px;font-size:0.82rem;">📋 SUS CSV</button>
+            </div>
+            <button id="export-report" class="btn-primary" style="margin-bottom:8px;">📄 导出健康报告 (PDF)</button>
+            <button id="export-data" class="btn-secondary" style="margin-bottom:8px;">📥 导出原始数据 (JSON) [旧版]</button>
+            <button id="clear-data" class="btn-danger">🗑️ 清除所有本地数据</button>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">ℹ️ 关于</h2>
+            <p class="card-desc">心灵日记 v0.3 — 精神健康记录助手<br>所有数据默认保存在您的设备上。<br>症状权重配置: js/symptom-config.js</p>
+        </section>
+    </main>
+
+    <!-- ==================== 底部导航 ==================== -->
+    <nav id="bottom-nav">
+        <button class="nav-btn active" data-page="record"><span class="nav-icon">📝</span><span class="nav-label">记录</span></button>
+        <button class="nav-btn" data-page="stats"><span class="nav-icon">📊</span><span class="nav-label">统计</span></button>
+        <button class="nav-btn" data-page="diary"><span class="nav-icon">📔</span><span class="nav-label">日记</span></button>
+        <button class="nav-btn" data-page="music"><span class="nav-icon">🎵</span><span class="nav-label">音乐</span></button>
+        <button class="nav-btn" data-page="settings"><span class="nav-icon">⚙️</span><span class="nav-label">设置</span></button>
+    </nav>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- 服药管理弹窗 -->
+    <div id="med-manager-overlay" class="med-overlay" style="display:none;">
+        <div id="med-manager-content" class="med-manager-dialog"></div>
+    </div>
+
+    <!-- 药品详情弹窗 -->
+    <div id="med-detail-overlay" class="med-overlay" style="display:none;">
+        <div id="med-detail-content" class="med-detail-dialog"></div>
+    </div>
+
+    <!-- JS 加载顺序: config → medication-db → db → medication → report → ambient/music/charts/contacts/sync → app -->
+    <script>
+        // 后端地址: 同域部署(Render)用 /api, 跨域部署(Vercel)自动降级到硬编码地址
+        window.MJ_API_BASE = "/api";
+    </script>
+    <script src="js/symptom-config.js?v=11"></script>
+    <script src="js/medication-db.js?v=10"></script>
+    <script src="js/db.js?v=12"></script>
+    <script src="js/medication.js?v=11"></script>
+    <script src="js/report.js?v=11"></script>
+    <script src="js/scales.js?v=2"></script>
+    <script src="js/ambient-sounds.js?v=11"></script>
+    <script src="js/charts.js?v=11"></script>
+    <script src="js/music.js?v=11"></script>
+    <script src="js/contacts.js?v=11"></script>
+    <script src="js/sync.js?v=12"></script>
+    <script src="js/error-handler.js?v=1"></script>
+    <script src="js/export-csv.js?v=1"></script>
+    <script src="js/onboarding.js?v=1"></script>
+    <script src="js/app.js?v=15"></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("./sw.js")
+                .then(() => console.log("SW registered"))
+                .catch(() => console.warn("SW failed"));
+        }
+    </script>
+</body>
+</html>

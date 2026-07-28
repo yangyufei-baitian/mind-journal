@@ -1,0 +1,30 @@
+{
+    "name": "心灵日记 - 精神健康记录",
+    "short_name": "心灵日记",
+    "description": "精神健康记录助手 — 情绪追踪、日记、安心音乐、紧急联系人",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#FAFAF5",
+    "theme_color": "#5B8C5A",
+    "icons": [
+        {
+            "src": "icons/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
