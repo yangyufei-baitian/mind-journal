@@ -27,7 +27,7 @@ allow_origins = [o.strip() for o in cors_origins.split(",")] if cors_origins != 
 app = FastAPI(
     title="心灵日记 API",
     description="精神健康记录助手 — 后端服务。匿名用户注册、情绪/症状/日记数据上传、知情同意管理、研究员数据查询。",
-    version="0.6.0",
+    version="0.7.0",
     docs_url="/docs",
     redoc_url=None
 )
