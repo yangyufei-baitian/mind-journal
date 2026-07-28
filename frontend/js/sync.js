@@ -12,10 +12,12 @@ const API_BASE = (() => {
     if (stored) return stored;
     if (window.MJ_API_BASE) return window.MJ_API_BASE;
     const host = window.location.hostname;
+    const protocol = window.location.protocol;
     if (!host || host === "localhost" || host === "127.0.0.1") {
         return "http://localhost:8000/api";
     }
-    return `http://${host}:8000/api`;
+    // 生产环境: 同域部署，API 在同一域名的 /api 下
+    return `${protocol}//${host}/api`;
 })();
 
 async function syncData() {

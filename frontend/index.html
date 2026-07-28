@@ -327,8 +327,8 @@
 
     <!-- JS 加载顺序: config → medication-db → db → medication → report → ambient/music/charts/contacts/sync → app -->
     <script>
-        // 生产环境后端地址 (部署 Vercel 时生效)
-        window.MJ_API_BASE = "https://mind-journal-api.onrender.com/api";
+        // 后端地址: 同域部署(Render)用 /api, 跨域部署(Vercel)自动降级到硬编码地址
+        window.MJ_API_BASE = "/api";
     </script>
     <script src="js/symptom-config.js?v=11"></script>
     <script src="js/medication-db.js?v=10"></script>

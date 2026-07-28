@@ -16,6 +16,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from database import init_db
 from routes import auth, data, consent
 
@@ -53,6 +54,17 @@ def startup():
 @app.get("/health")
 def health_check():
     return {"status": "ok", "app": "心灵日记", "version": "0.6.0"}
+
+
+@app.get("/api")
+def api_root():
+    return {"message": "心灵日记 API v0.6.0", "docs": "/docs"}
+
+
+# 托管前端静态文件 (同域部署: Render 直接提供全栈服务)
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+if os.path.isdir(STATIC_DIR):
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 
 if __name__ == "__main__":
