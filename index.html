@@ -7,8 +7,8 @@
     <meta name="description" content="心灵日记 - 精神健康记录助手">
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
     <title>心灵日记</title>
-    <link rel="stylesheet" href="css/style.css?v=16">
-    <script>window._HTML_VER = "v12-error-handling";</script>
+    <link rel="stylesheet" href="css/style.css?v=17">
+    <script>window._HTML_VER = "v13-sus";</script>
     <script src="js/vendor/chart.umd.min.js"></script>
     <script src="js/vendor/dexie.min.js"></script>
     <script src="js/vendor/html2pdf.bundle.min.js"></script>
@@ -270,6 +270,18 @@
             <p id="sync-info" class="sync-info"></p>
         </section>
 
+        <section class="card" id="sus-card">
+            <h2 class="card-title">📋 系统反馈</h2>
+            <p class="card-desc">帮我们改进心灵日记 — 你的回答只用于研究，不关联个人身份</p>
+            <div id="sus-form"></div>
+            <button id="submit-sus" class="btn-primary" style="margin-top:12px;">📤 提交可用性评分</button>
+            <p id="sus-result" class="sync-info" style="margin-top:4px;"></p>
+            <hr style="margin:16px 0;border-color:var(--border);">
+            <p class="card-desc">💬 还有什么想说的？（可选）</p>
+            <textarea id="feedback-text" rows="2" placeholder="哪里好用？哪里不好用？有什么建议？" style="width:100%;margin-bottom:8px;"></textarea>
+            <button id="submit-feedback" class="btn-secondary">📤 提交反馈</button>
+        </section>
+
         <section class="card">
             <h2 class="card-title">📦 数据管理</h2>
             <button id="export-all-csv" class="btn-primary" style="margin-bottom:10px;">📥 一键导出全部 (CSV+数据字典 ZIP)</button>
@@ -279,6 +291,7 @@
                 <button id="export-symptom-csv" class="btn-secondary btn-sm" style="flex:1;min-width:100px;font-size:0.82rem;">🏥 症状CSV</button>
                 <button id="export-scale-csv" class="btn-secondary btn-sm" style="flex:1;min-width:100px;font-size:0.82rem;">📋 量表CSV</button>
                 <button id="export-med-csv" class="btn-secondary btn-sm" style="flex:1;min-width:100px;font-size:0.82rem;">💊 服药CSV</button>
+                <button id="export-sus-csv" class="btn-secondary btn-sm" style="flex:1;min-width:100px;font-size:0.82rem;">📋 SUS CSV</button>
             </div>
             <button id="export-report" class="btn-primary" style="margin-bottom:8px;">📄 导出健康报告 (PDF)</button>
             <button id="export-data" class="btn-secondary" style="margin-bottom:8px;">📥 导出原始数据 (JSON) [旧版]</button>
@@ -331,7 +344,7 @@
     <script src="js/error-handler.js?v=1"></script>
     <script src="js/export-csv.js?v=1"></script>
     <script src="js/onboarding.js?v=1"></script>
-    <script src="js/app.js?v=14"></script>
+    <script src="js/app.js?v=15"></script>
     <script>
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("./sw.js")

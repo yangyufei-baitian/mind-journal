@@ -554,6 +554,26 @@ async function exportAllCSV() {
         }));
         zip.file(`consent-${dateStr}.csv`, CSV_BOM + toCSV(consentHeaders, consentRows));
 
+        // 系统可用性量表 (SUS)
+        const susAll = await db.susResults.toArray();
+        susAll.sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
+        const susHeaders = ["记录时间","SUS总分(0-100)","可用性评级","Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","文字反馈"];
+        const susRows = susAll.map(e => {
+            const sc = e.scores || [];
+            return {
+                "记录时间": e.created_at || "",
+                "SUS总分(0-100)": e.sus_total !== null ? e.sus_total : "",
+                "可用性评级": e.sus_total !== null ? (e.sus_total >= 80 ? "优秀" : e.sus_total >= 68 ? "良好" : e.sus_total >= 50 ? "一般" : "需改进") : "仅反馈",
+                "Q1": sc[0] !== undefined ? sc[0] : "", "Q2": sc[1] !== undefined ? sc[1] : "",
+                "Q3": sc[2] !== undefined ? sc[2] : "", "Q4": sc[3] !== undefined ? sc[3] : "",
+                "Q5": sc[4] !== undefined ? sc[4] : "", "Q6": sc[5] !== undefined ? sc[5] : "",
+                "Q7": sc[6] !== undefined ? sc[6] : "", "Q8": sc[7] !== undefined ? sc[7] : "",
+                "Q9": sc[8] !== undefined ? sc[8] : "", "Q10": sc[9] !== undefined ? sc[9] : "",
+                "文字反馈": e.feedback || ""
+            };
+        });
+        zip.file(`sus-${dateStr}.csv`, CSV_BOM + toCSV(susHeaders, susRows));
+
         // 生成 ZIP 并下载
         const blob = await zip.generateAsync({ type: "blob" });
         const url = URL.createObjectURL(blob);
@@ -586,8 +606,52 @@ async function exportAllCSVFallback() {
     await sleep(300);
     counts.push(await exportMedicationCSV());
     await sleep(300);
+    counts.push(await exportSUSCSV());
+    await sleep(300);
     downloadDataDictionary();
     showToast(`✅ 已分别导出 ${counts.reduce((a,b)=>a+b,0)} 条记录 + 数据字典`);
+}
+
+// ==================== 系统可用性量表 (SUS) CSV ====================
+
+async function exportSUSCSV() {
+    const all = await db.susResults.toArray();
+    all.sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
+
+    const headers = [
+        "记录时间", "SUS总分(0-100)", "可用性评级",
+        "Q1-愿意经常使用(1-5)", "Q2-不必这么复杂(1-5)", "Q3-容易使用(1-5)",
+        "Q4-不需要帮助(1-5)", "Q5-功能整合好(1-5)", "Q6-无不一致(1-5)",
+        "Q7-很快学会(1-5)", "Q8-不麻烦(1-5)", "Q9-有信心(1-5)", "Q10-不需要学很多(1-5)",
+        "文字反馈"
+    ];
+
+    const rows = all.map(e => {
+        const sc = e.scores || [];
+        const label = e.sus_total !== null
+            ? (e.sus_total >= 80 ? "优秀" : e.sus_total >= 68 ? "良好" : e.sus_total >= 50 ? "一般" : "需改进")
+            : "仅反馈";
+        return {
+            "记录时间": e.created_at || "",
+            "SUS总分(0-100)": e.sus_total !== null ? e.sus_total : "",
+            "可用性评级": label,
+            "Q1-愿意经常使用(1-5)": sc[0] !== undefined ? sc[0] : "",
+            "Q2-不必这么复杂(1-5)": sc[1] !== undefined ? sc[1] : "",
+            "Q3-容易使用(1-5)": sc[2] !== undefined ? sc[2] : "",
+            "Q4-不需要帮助(1-5)": sc[3] !== undefined ? sc[3] : "",
+            "Q5-功能整合好(1-5)": sc[4] !== undefined ? sc[4] : "",
+            "Q6-无不一致(1-5)": sc[5] !== undefined ? sc[5] : "",
+            "Q7-很快学会(1-5)": sc[6] !== undefined ? sc[6] : "",
+            "Q8-不麻烦(1-5)": sc[7] !== undefined ? sc[7] : "",
+            "Q9-有信心(1-5)": sc[8] !== undefined ? sc[8] : "",
+            "Q10-不需要学很多(1-5)": sc[9] !== undefined ? sc[9] : "",
+            "文字反馈": e.feedback || ""
+        };
+    });
+
+    const dateStr = new Date().toISOString().split("T")[0];
+    downloadBlob(toCSV(headers, rows), `mind-journal-sus-${dateStr}.csv`);
+    return rows.length;
 }
 
 function sleep(ms) {

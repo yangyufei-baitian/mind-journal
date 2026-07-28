@@ -54,6 +54,11 @@ db.version(4).stores({
     scaleEntries: "++id, scale_type, date, [scale_type+date]"
 });
 
+// v5: 系统可用性量表 (SUS) 反馈
+db.version(5).stores({
+    susResults: "++id, created_at"
+});
+
 // ==================== 用户信息 ====================
 
 async function getUserId() {
@@ -416,6 +421,7 @@ async function clearAllData() {
     await db.userMedications.clear();
     await db.medicationLog.clear();
     await db.scaleEntries.clear();
+    await db.susResults.clear();
     await db.consentSettings.clear();
 }
 
