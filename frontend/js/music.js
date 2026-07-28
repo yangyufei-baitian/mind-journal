@@ -33,8 +33,7 @@ async function addMusicTrack() {
         showToast(`"${name}" 已添加 ✅`);
         await loadMusicList();
     } catch (err) {
-        console.error("保存音乐失败:", err);
-        showToast("添加失败，请重试");
+        handleError(err, "保存音乐", { toast: true });
     }
 }
 

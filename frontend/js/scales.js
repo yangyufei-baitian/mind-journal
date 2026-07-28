@@ -674,7 +674,12 @@ async function showScaleResult() {
   const severity = getSeverity(currentScaleId, totalScore, currentScaleAnswers);
   const flagMsg = isRequired ? checkFlags(currentScaleId, currentScaleAnswers) : null;
 
-  await saveScaleResult(currentScaleId, totalScore, [...currentScaleAnswers], severity.label);
+  try {
+    await saveScaleResult(currentScaleId, totalScore, [...currentScaleAnswers], severity.label);
+  } catch (e) {
+    handleError(e, "保存量表结果", { toast: true });
+    return;
+  }
 
   // Crisis intervention (required scales only)
   if (isRequired && currentScaleId === "cssrs" && severity.min >= 2) {
@@ -730,7 +735,12 @@ async function showSCL90Result() {
   const factorResult = getSCL90Factors(currentScaleAnswers);
   const severity = getSeverity("scl90", factorResult.total, currentScaleAnswers);
 
-  await saveScaleResult("scl90", factorResult.total, [...currentScaleAnswers], severity.label);
+  try {
+    await saveScaleResult("scl90", factorResult.total, [...currentScaleAnswers], severity.label);
+  } catch (e) {
+    handleError(e, "保存SCL-90结果", { toast: true });
+    return;
+  }
 
   const factorColors = factorResult.factors.map(f => {
     if (f.avg >= 3.0) return "#C0392B";

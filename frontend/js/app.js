@@ -47,7 +47,7 @@ function switchPage(pageName) {
         else if (pageName === "record") { updateTodaySummary(); loadWeeklySummary(); renderMedicationCheckins(); }
         else if (pageName === "diary") { loadDiaryList(); }
     } catch (e) {
-        console.warn("switchPage init error:", pageName, e);
+        handleWarn(e, "初始化页面-" + pageName);
     }
 }
 
@@ -58,11 +58,11 @@ document.addEventListener("DOMContentLoaded", () => {
     buildEmotionTags();
     buildSymptomCards();
     buildCategoryFilter();
-    try { buildSingleSymptomSelector(); } catch(e) { console.warn("single-symptom:", e); }
-    try { buildAmbientSounds(); } catch(e) { console.warn("ambient:", e); }
-    try { buildAccountUI(); } catch(e) { console.warn("account:", e); }
-    try { renderMedicationCheckins(); } catch(e) { console.warn("medication:", e); }
-    try { renderScaleCards(); } catch(e) { console.warn("scales:", e); }
+    try { buildSingleSymptomSelector(); } catch(e) { handleWarn(e, "构建症状选择器"); }
+    try { buildAmbientSounds(); } catch(e) { handleWarn(e, "构建环境音"); }
+    try { buildAccountUI(); } catch(e) { handleWarn(e, "构建账号UI"); }
+    try { renderMedicationCheckins(); } catch(e) { handleWarn(e, "渲染服药打卡"); }
+    try { renderScaleCards(); } catch(e) { handleWarn(e, "渲染量表卡片"); }
 
     // 弹窗点击外部关闭
     document.getElementById("med-manager-overlay")?.addEventListener("click", function(e) {
@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll(".chart-tab").forEach(t => t.classList.remove("active"));
             tab.classList.add("active");
             currentChartPeriod = tab.dataset.period;
-            loadCharts();
+            loadCharts().catch(e => handleWarn(e, "切换图表周期"));
         });
     });
 
@@ -429,12 +429,12 @@ async function saveRecord() {
 
     try {
         await saveMoodEntry({ date: today, time_period: currentTimePeriod, score, emotion_tags: emotionTags, note: document.getElementById("mood-note").value.trim() });
-    } catch (err) { console.error(err); showToast("情绪保存失败"); return; }
+    } catch (err) { handleError(err, "保存情绪", { toast: true }); return; }
 
     const symList = Object.entries(selectedSymptoms).filter(([_, d]) => d.level).map(([id, d]) => ({ symptom_id: id, level: d.level, frequency: d.frequency || null }));
     if (symList.length > 0) {
         try { await saveSymptomEntry({ date: today, time_period: currentTimePeriod, symptoms: symList }); }
-        catch (err) { console.error(err); showToast("症状保存失败"); return; }
+        catch (err) { handleError(err, "保存症状", { toast: true }); return; }
     }
 
     showToast("记录已保存 ✅");
@@ -580,7 +580,7 @@ async function loadWeeklySummary() {
         }, 50);
 
     } catch (e) {
-        console.warn("loadWeeklySummary error:", e);
+        handleWarn(e, "加载本周概况");
         content.innerHTML = '<div class="summary-loading">—</div>';
     }
 }
@@ -690,9 +690,11 @@ function renderSparkline(canvasId, data, opts = {}) {
 async function saveDiary() {
     const c = document.getElementById("diary-content").value.trim();
     if (!c) { showToast("请写点什么吧"); return; }
-    await saveDiaryEntry({ title: document.getElementById("diary-title").value.trim() || "无标题", content: c, mood_at_time: parseInt(document.getElementById("diary-mood").value) });
-    document.getElementById("diary-title").value = ""; document.getElementById("diary-content").value = "";
-    showToast("日记已保存 ✅"); await loadDiaryList();
+    try {
+        await saveDiaryEntry({ title: document.getElementById("diary-title").value.trim() || "无标题", content: c, mood_at_time: parseInt(document.getElementById("diary-mood").value) });
+        document.getElementById("diary-title").value = ""; document.getElementById("diary-content").value = "";
+        showToast("日记已保存 ✅"); await loadDiaryList();
+    } catch (e) { handleError(e, "保存日记", { toast: true }); }
 }
 
 async function loadDiaryList() {
@@ -723,15 +725,14 @@ async function csvExportWrapper(exportFn, label) {
             showToast(`📭 ${label}无数据可导出`);
         }
     } catch (e) {
-        console.error(`CSV export (${label}) failed:`, e);
-        showToast(`❌ ${label}CSV 导出失败: ${e.message || "未知错误"}`);
+        handleError(e, "导出" + label + "CSV", { toast: true, detail: true });
     }
 }
 
 function clearDataHandler() {
     if (confirm("确定要清除所有本地数据吗？\n此操作不可恢复！建议先导出数据备份。")) {
         if (confirm("再次确认：清除所有记录、日记、联系人和音乐？")) {
-            clearAllData().then(() => { showToast("数据已清除"); updateTodaySummary(); loadWeeklySummary(); });
+            clearAllData().then(() => { showToast("数据已清除"); updateTodaySummary(); loadWeeklySummary(); }).catch(e => handleError(e, "清除数据", { toast: true }));
         }
     }
 }
@@ -869,8 +870,7 @@ async function handleRegister() {
         resetOnboarding();
         setTimeout(() => showOnboarding(), 400);
     } catch (e) {
-        console.error(e);
-        showToast("网络错误，请确认后端已启动");
+        handleNetworkError(e, "注册");
     }
 }
 
@@ -904,8 +904,7 @@ async function handleLogin() {
         showToast("登录成功! 欢迎回来");
         buildAccountUI();
     } catch (e) {
-        console.error(e);
-        showToast("网络错误，请确认后端已启动");
+        handleNetworkError(e, "登录");
     }
 }
 

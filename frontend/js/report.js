@@ -79,8 +79,7 @@ async function generateReport(days) {
         showToast("报告准备中，即将弹出打印对话框...");
 
     } catch (e) {
-        console.error("Report failed:", e);
-        showToast("报告生成失败: " + (e.message || "未知错误"));
+        handleError(e, "生成报告", { toast: true, detail: true });
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = "📄 生成报告"; }
     }
@@ -191,7 +190,7 @@ async function collectReportData(days) {
     try {
         scaleData = await collectScaleDataForReport(days);
     } catch (e) {
-        console.warn("Scale data collection failed:", e);
+        handleWarn(e, "收集量表数据");
     }
     const hasScaleData = scaleData.phq9?.hasData || scaleData.gad7?.hasData ||
                          scaleData.cssrs?.hasData || scaleData.dshi?.hasData;

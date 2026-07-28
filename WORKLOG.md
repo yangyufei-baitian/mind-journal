@@ -96,7 +96,8 @@ Phase 1 [✅ 完成] → Phase 2 [✅ 进行中] → Phase 3 [待开始] → Pha
 - [x] ~~P2 引导页~~ → 已完成 (07-27, onboarding.js)
 - [x] ~~P2 统计页 mini-charts~~ → 已完成 (07-27)
 - [x] ~~P3: 移除 CDN 依赖~~ → 已完成 (07-27, 4库本地化)
-- [ ] P3 剩余: 统一错误处理, JSON 数据导入 (已取消)
+- [x] ~~P3: 统一错误处理~~ → 已完成 (07-28, error-handler.js)
+- [ ] P3 剩余: (无)
 
 ### 2.5 Tier 0 科研数据导出 (07-27)
 
@@ -148,6 +149,17 @@ Phase 1 [✅ 完成] → Phase 2 [✅ 进行中] → Phase 3 [待开始] → Pha
 | 07-27 | 🔗 index.html: 4个 CDN script 标签改为本地引用 | ✅ |
 | 07-27 | 🔢 SW v0.19: STATIC_ASSETS 移除 CDN URL，新增本地 vendor 路径 | ✅ |
 | 07-27 | 🔢 HTML_VER v10-local-deps + CSS v15 + app.js v13 | ✅ |
+
+### 2.10 统一错误处理 (07-28)
+
+| 日期 | 内容 | 状态 |
+|------|------|:--:|
+| 07-28 | 📐 **error-handler.js**: handleError / handleWarn / handleNetworkError + 内存日志 | ✅ |
+| 07-28 | 🔧 **app.js**: 14处改造 (switchPage/init/saveRecord/saveDiary/register/login/weeklySummary/csvExport/clearData/chartTabs) | ✅ |
+| 07-28 | 🔧 **sync.js**: 6处 per-entry catch + 静默注册 + 错误报告改进 (显示错误数) | ✅ |
+| 07-28 | 🔧 **contacts.js / music.js / report.js / export-csv.js**: 统一为 handleError() | ✅ |
+| 07-28 | 🔧 **scales.js**: saveScaleResult 加错误保护 (showScaleResult + showSCL90Result) | ✅ |
+| 07-28 | 🔢 SW v0.21 + HTML_VER v12-error-handling + CSS v16 + app.js v14 | ✅ |
 
 ---
 
