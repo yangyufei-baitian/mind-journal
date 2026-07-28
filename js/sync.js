@@ -38,7 +38,7 @@ async function syncData() {
             body: JSON.stringify({ anonymous_id: userId })
         });
     } catch (e) {
-        // 静默失败，后续同步会暴露真正的错误
+        handleWarn(e, "同步-静默注册");
     }
 
     // 1. 同步情绪记录
@@ -66,7 +66,8 @@ async function syncData() {
                     errors.push("情绪:" + (err.detail || resp.status));
                 }
             } catch (e) {
-                errors.push("情绪POST:" + (e.message || "网络错误"));
+                errors.push("情绪:" + (e.message || "网络错误"));
+                handleError(e, "同步-情绪", { silent: true });
             }
         }
     }
@@ -94,7 +95,8 @@ async function syncData() {
                     errors.push("症状:" + (err.detail || resp.status));
                 }
             } catch (e) {
-                errors.push("症状POST:" + (e.message || "网络错误"));
+                errors.push("症状:" + (e.message || "网络错误"));
+                handleError(e, "同步-症状", { silent: true });
             }
         }
     }
@@ -123,7 +125,8 @@ async function syncData() {
                     errors.push("日记:" + (err.detail || resp.status));
                 }
             } catch (e) {
-                errors.push("日记POST:" + (e.message || "网络错误"));
+                errors.push("日记:" + (e.message || "网络错误"));
+                handleError(e, "同步-日记", { silent: true });
             }
         }
     }
@@ -156,7 +159,8 @@ async function syncData() {
                     errors.push("药品配置:" + (err.detail || resp.status));
                 }
             } catch (e) {
-                errors.push("药品配置POST:" + (e.message || "网络错误"));
+                errors.push("药品配置:" + (e.message || "网络错误"));
+                handleError(e, "同步-药品配置", { silent: true });
             }
         }
     }
@@ -184,7 +188,8 @@ async function syncData() {
                     errors.push("服药打卡:" + (err.detail || resp.status));
                 }
             } catch (e) {
-                errors.push("服药打卡POST:" + (e.message || "网络错误"));
+                errors.push("服药打卡:" + (e.message || "网络错误"));
+                handleError(e, "同步-服药打卡", { silent: true });
             }
         }
     }
@@ -214,7 +219,8 @@ async function syncData() {
                     errors.push("量表:" + (err.detail || resp.status));
                 }
             } catch (e) {
-                errors.push("量表POST:" + (e.message || "网络错误"));
+                errors.push("量表:" + (e.message || "网络错误"));
+                handleError(e, "同步-量表", { silent: true });
             }
         }
     }
@@ -225,8 +231,8 @@ async function syncData() {
         updateSyncStatus(true);
     } else if (errors.length === 0) {
         showToast("没有需要同步的新数据");
-    } else {
-        showToast("同步失败: " + errors[0]);
+    } else if (errors.length > 0) {
+        showToast(`同步失败 (${errors.length}项): ${errors[0]}`);
     }
 }
 

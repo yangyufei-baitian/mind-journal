@@ -569,8 +569,8 @@ async function exportAllCSV() {
         showToast(`✅ 已导出 ${totalFiles} 个文件 (CSV + 数据字典 + 知情同意)`);
 
     } catch (e) {
-        console.error("ZIP export failed:", e);
-        showToast("⚠️ 打包失败: " + (e.message || "未知错误") + "，正在分别下载...");
+        handleError(e, "打包ZIP", { toast: true, detail: true });
+        showToast("正在分别下载...");
         await exportAllCSVFallback();
     }
 }

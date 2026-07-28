@@ -26,8 +26,7 @@ async function addContact() {
         showToast(`紧急联系人 "${name}" 已添加 ✅`);
         await loadContactList();
     } catch (err) {
-        console.error("保存联系人失败:", err);
-        showToast("添加失败，请重试");
+        handleError(err, "保存联系人", { toast: true });
     }
 }
 
